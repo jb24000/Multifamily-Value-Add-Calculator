@@ -1,5 +1,5 @@
 // Simple offline-first SW with cache versioning.
-const CACHE_NAME = "mf-calculator-v1.0.0";
+const CACHE_NAME = "mf-value-add-v1.0.0";
 const ASSETS = [
   "./",
   "./index.html",
