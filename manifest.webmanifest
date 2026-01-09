@@ -1,7 +1,7 @@
 {
-  "name": "Multifamily Value-Add Calculator",
-  "short_name": "MF Calculator",
-  "description": "Value-add multifamily underwriting: rent lift, NOI, DSCR, exit, and returns.",
+  "name": "Multifamily-Value-Add-Calculator",
+  "short_name": "MF Value-Add",
+  "description": "Value-add multifamily underwriting: rent lift, NOI, DSCR, exit value, and investor returns.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
