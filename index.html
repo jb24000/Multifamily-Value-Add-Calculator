@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b0f14">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multifamily Deal Checklist + Value-Add Calculator</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --card:#121826; --muted:#93a4b8; --text:#e7eef8; --line:#223044;
+      --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+    }
+    *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    body{margin:0;background:var(--bg);color:var(--text);padding:16px}
+    h1{font-size:18px;margin:0 0 12px}
+    .grid{display:grid;grid-template-columns:1.35fr .85fr;gap:12px;max-width:1200px;margin:0 auto}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .row{display:grid;grid-template-columns:1.25fr .75fr;gap:10px;align-items:center;margin:8px 0}
+    label{color:var(--muted);font-size:12px}
+    input,select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0e1420;color:var(--text)}
+    .section-title{font-weight:900;font-size:13px;margin:10px 0 6px;color:#cfe0ff}
+    .hr{height:1px;background:var(--line);margin:10px 0}
+    .kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .pill{padding:10px;border:1px solid var(--line);border-radius:12px;background:#0e1420}
+    .pill .t{font-size:12px;color:var(--muted)}
+    .pill .v{font-weight:900;font-size:16px}
+    .right .card{position:sticky;top:12px}
+    .subcard{background:#0e1420;border:1px solid var(--line);border-radius:12px;padding:10px}
+    .badge{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px}
+    .good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+    .small{font-size:12px;color:var(--muted);line-height:1.4}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} .right .card{position:static} }
+  </style>
+</head>
+<script>
+  // Register Service Worker
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", async () => {
+      try {
+        await navigator.serviceWorker.register("./service-worker.js");
+      } catch (e) {
+        console.warn("SW registration failed", e);
+      }
+    });
+  }
+
+  // Optional: Install prompt button (Android/Chrome)
+  let deferredPrompt = null;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "inline-flex";
+  });
+
+  async function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "none";
+  }
+</script>
+  
+<body>
+  <button id="installBtn" onclick="installApp()" style="display:none; margin:0 0 12px; padding:10px 12px; border-radius:12px; border:1px solid #223044; background:#0e1420; color:#e7eef8; font-weight:700;">
+  Install App
+</button>
+  <h1>Multifamily Deal Checklist & Key Metrics (Value-Add + Debt + Returns)</h1>
+
+  <div class="grid">
+    <!-- LEFT -->
+    <div class="left">
+      <div class="card">
+
+        <div class="section-title">Property</div>
+        <div class="row"><label>Property Name</label><input id="propName" placeholder="e.g., October Apartments"></div>
+        <div class="row"><label>Property Address</label><input id="propAddr" placeholder="Street, City, State"></div>
+
+        <div class="hr"></div>
+
+        <div class="section-title">Basic Inputs</div>
+        <div class="row"><label># of Units</label><input id="units" type="number" value="11" min="1" step="1"/></div>
+        <div class="row"><label>Purchase Price</label><input id="purchasePrice" type="number" value="1500000" step="1000"/></div>
+
+        <div class="hr"></div>
+
+        <div class="section-title">NOI Mode (Choose 1 or 2)</div>
+        <div class="row">
+          <label>NOI Input Mode</label>
+          <select id="noiMode">
+            <option value="quick">1) Quick Underwrite (calc in-place NOI from rents)</option>
+            <option value="t12">2) T-12 Actual NOI (manual in-place NOI)</option>
+          </select>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="section-title">Rents (Value-Add)</div>
+        <div class="row"><label>Current Avg Rent (per unit / month)</label><input id="currentRent" type="number" value="1350" step="25"/></div>
+
+        <div class="row">
+          <label>Post-Upgrade Rent Input Mode</label>
+          <select id="rentMode">
+            <option value="increase">Enter Rent Increase ($/unit/mo)</option>
+            <option value="target">Enter Target Market Rent ($/unit/mo)</option>
+          </select>
+        </div>
+
+        <div class="row" id="rowIncrease">
+          <label>Rent Increase After Upgrades (per unit / month)</label>
+          <input id="rentIncrease" type="number" value="300" step="25"/>
+        </div>
+
+        <div class="row" id="rowTarget" style="display:none">
+          <label>Target Market Rent (per unit / month)</label>
+          <input id="targetRent" type="number" value="1650" step="25"/>
+        </div>
+
+        <div class="row"><label>Other Income (per month, total)</label><input id="otherIncomeMonthly" type="number" value="0" step="50"/></div>
+
+        <!-- QUICK NOI -->
+        <div id="quickNOIInputs">
+          <div class="row"><label>Vacancy %</label><input id="vacancyPct" type="number" value="5" step="0.25"/></div>
+          <div class="row"><label>Expense Ratio % (of EGI)</label><input id="expensePct" type="number" value="40" step="0.25"/></div>
+        </div>
+
+        <!-- T12 NOI -->
+        <div id="t12NOIInputs" style="display:none">
+          <div class="row">
+            <label>In-Place NOI (Annual) — Manual</label>
+            <input id="inPlaceNOIAnnual" type="number" value="106653" step="1000"/>
+          </div>
+          <div class="row"><label>Vacancy % (for stabilized)</label><input id="vacancyPctT12" type="number" value="5" step="0.25"/></div>
+          <div class="row"><label>Expense Ratio % (of EGI, for stabilized)</label><input id="expensePctT12" type="number" value="40" step="0.25"/></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="section-title">Debt</div>
+        <div class="row"><label>LTV %</label><input id="ltvPct" type="number" value="70" step="0.5"/></div>
+        <div class="row"><label>Interest Rate %</label><input id="ratePct" type="number" value="6.00" step="0.05"/></div>
+        <div class="row"><label>Amortization (years)</label><input id="amortYears" type="number" value="30" step="1"/></div>
+        <div class="row"><label>Hold Period (years)</label><input id="holdYears" type="number" value="5" step="1"/></div>
+        <div class="row">
+          <label>Returns Use Debt Service</label>
+          <select id="returnDebtMode">
+            <option value="pi">P&I</option>
+            <option value="io">Interest-Only</option>
+          </select>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="section-title">Exit / Sale</div>
+        <div class="row"><label>Exit Cap Rate %</label><input id="exitCapPct" type="number" value="6.00" step="0.01"/></div>
+        <div class="row"><label>Sale Costs % (broker + closing)</label><input id="saleCostPct" type="number" value="4.0" step="0.25"/></div>
+
+        <div class="hr"></div>
+
+        <div class="section-title">Equity</div>
+        <div class="row"><label>Upgrade Budget / Additional Equity (CapEx)</label><input id="capex" type="number" value="200000" step="1000"/></div>
+
+        <div class="hr"></div>
+
+        <div class="section-title">Core Outputs</div>
+        <div class="kpi">
+          <div class="pill"><div class="t">Price / Unit</div><div class="v" id="outPricePerUnit">$0</div></div>
+          <div class="pill"><div class="t">Loan Amount</div><div class="v" id="outLoan">$0</div></div>
+
+          <div class="pill"><div class="t">Post-Upgrade Rent (avg)</div><div class="v" id="outPostRent">$0</div></div>
+          <div class="pill"><div class="t">Monthly Rent Lift (Total)</div><div class="v" id="outMonthlyLift">$0</div></div>
+
+          <div class="pill"><div class="t">In-Place NOI (annual)</div><div class="v" id="outNOIInPlace">$0</div></div>
+          <div class="pill"><div class="t">Stabilized NOI (annual)</div><div class="v" id="outNOIStabilized">$0</div></div>
+
+          <div class="pill"><div class="t">NOI Increase ($)</div><div class="v" id="outNOIInc">$0</div></div>
+          <div class="pill"><div class="t">NOI Growth (%)</div><div class="v" id="outNOIGrowth">—</div></div>
+
+          <div class="pill"><div class="t">Projected Value (Exit Cap)</div><div class="v" id="outProjValue">$0</div></div>
+          <div class="pill"><div class="t">Value Increase (Δ Value)</div><div class="v" id="outValueInc">$0</div></div>
+
+          <div class="pill"><div class="t">Net Proceeds (at sale)</div><div class="v" id="outNetProceeds">$0</div></div>
+          <div class="pill"><div class="t">Equity Multiple</div><div class="v" id="outEquityMultiple">—</div></div>
+
+          <div class="pill"><div class="t">Avg Annual Return (CAGR)</div><div class="v" id="outAvgAnnual">—</div></div>
+          <div class="pill"><div class="t">Avg Annual Cash Flow</div><div class="v" id="outCashFlow">$0</div></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="small">
+          <b>Definitions:</b><br/>
+          NOI = (Gross Rent + Other Income − Vacancy) − Expenses (expense ratio applied to EGI).<br/>
+          Projected Value = Stabilized NOI ÷ Exit Cap.<br/>
+          Net Proceeds = Projected Value − Sale Costs − Remaining Loan Balance (amortized).<br/>
+          Equity Multiple = (Net Proceeds + cumulative cash flow) ÷ Total Equity (Equity + CapEx).<br/>
+          Avg Annual Return uses CAGR: (EquityMultiple)^(1/holdYears) − 1.
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT DASH -->
+    <div class="right">
+      <div class="card">
+        <div class="section-title">Deal Checklist & Key Metrics</div>
+
+        <div class="subcard">
+          <div class="section-title">Debt</div>
+          <div class="row"><label>DSCR (P&I)</label><div id="outDSCR_PI" class="badge">—</div></div>
+          <div class="row"><label>DSCR (IO)</label><div id="outDSCR_IO" class="badge">—</div></div>
+          <div class="row"><label>Debt Service (P&I / yr)</label><div id="outDebtPI" class="badge">—</div></div>
+          <div class="row"><label>Debt Service (IO / yr)</label><div id="outDebtIO" class="badge">—</div></div>
+          <div class="row"><label>Leverage (LTV)</label><div id="outLTV" class="badge">—</div></div>
+          <div class="row"><label>Interest Rate</label><div id="outRate" class="badge">—</div></div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="subcard">
+          <div class="section-title">NOI Growth</div>
+          <div class="row"><label>Takeover NOI</label><div id="outNOITakeover" class="badge">—</div></div>
+          <div class="row"><label>Market NOI</label><div id="outNOIMarket" class="badge">—</div></div>
+          <div class="row"><label>Growth</label><div id="outNOIGrowthBadge" class="badge">—</div></div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="subcard">
+          <div class="section-title">Exit</div>
+          <div class="row"><label>Projected Value</label><div id="outProjValueBadge" class="badge">—</div></div>
+          <div class="row"><label>Sale Costs</label><div id="outSaleCosts" class="badge">—</div></div>
+          <div class="row"><label>Loan Bal @ Sale</label><div id="outBalAtSale" class="badge">—</div></div>
+          <div class="row"><label>Net Proceeds</label><div id="outNetProceedsBadge" class="badge">—</div></div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="subcard">
+          <div class="section-title">Investor Returns</div>
+          <div class="row"><label>Total Equity In</label><div id="outTotalEquity" class="badge">—</div></div>
+          <div class="row"><label>Equity Multiple</label><div id="outEquityMultipleBadge" class="badge">—</div></div>
+          <div class="row"><label>Avg Annual Return</label><div id="outAvgAnnualBadge" class="badge">—</div></div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="section-title">Verdict</div>
+        <div class="small" id="outVerdict">—</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  const fmtMoney0 = (n) => isFinite(n) ? n.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0}) : "—";
+  const fmtMoney2 = (n) => isFinite(n) ? n.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:2}) : "—";
+  const fmtPct2   = (n) => isFinite(n) ? (n*100).toFixed(2) + "%" : "—";
+  const fmtNum2   = (n) => isFinite(n) ? n.toFixed(2) : "—";
+
+  function badge(el, text, tone){
+    el.textContent = text;
+    el.className = "badge" + (tone ? (" " + tone) : "");
+  }
+
+  function calcNOI(units, rentPerUnit, otherIncomeMonthly, vacancyPct, expensePct){
+    const gprAnnual = units * rentPerUnit * 12;
+    const otherAnnual = otherIncomeMonthly * 12;
+    const gross = gprAnnual + otherAnnual;
+    const egi = gross * (1 - vacancyPct);
+    const expenses = egi * expensePct;
+    const noi = egi - expenses;
+    return {noi, gross, egi, expenses};
+  }
+
+  function pmt(rateAnnual, years, principal){
+    const r = rateAnnual/12;
+    const n = years*12;
+    if (!isFinite(principal) || principal <= 0) return 0;
+    if (r === 0) return principal/n;
+    return (r * principal) / (1 - Math.pow(1+r, -n));
+  }
+
+  function balanceAfterYears(rateAnnual, amortYears, principal, yearsHeld){
+    const r = rateAnnual/12;
+    const n = amortYears*12;
+    const k = Math.min(Math.max(0, yearsHeld*12), n);
+    if (!isFinite(principal) || principal <= 0) return 0;
+    const payment = pmt(rateAnnual, amortYears, principal);
+    if (r === 0) return principal * (1 - k/n);
+    return principal * Math.pow(1+r, k) - payment * ((Math.pow(1+r,k)-1)/r);
+  }
+
+  function syncUI(){
+    const noiMode = $("noiMode").value;
+    $("quickNOIInputs").style.display = (noiMode === "quick") ? "block" : "none";
+    $("t12NOIInputs").style.display   = (noiMode === "t12") ? "block" : "none";
+
+    const rentMode = $("rentMode").value;
+    $("rowIncrease").style.display = rentMode === "increase" ? "grid" : "none";
+    $("rowTarget").style.display   = rentMode === "target"   ? "grid" : "none";
+  }
+
+  function recalc(){
+    // Basics
+    const units = Math.max(1, Number($("units").value||0));
+    const purchase = Number($("purchasePrice").value||0);
+
+    // Rent
+    const currentRent = Number($("currentRent").value||0);
+    const otherIncomeMonthly = Number($("otherIncomeMonthly").value||0);
+
+    const rentMode = $("rentMode").value;
+    const rentIncrease = Number($("rentIncrease").value||0);
+    const targetRent = Number($("targetRent").value||0);
+    const postRent = rentMode === "target" ? targetRent : (currentRent + rentIncrease);
+
+    // NOI mode
+    const noiMode = $("noiMode").value;
+
+    // Debt
+    const ltv = Number($("ltvPct").value||0)/100;
+    const rate = Number($("ratePct").value||0)/100;
+    const amortYears = Math.max(1, Number($("amortYears").value||1));
+    const holdYears  = Math.max(1, Number($("holdYears").value||1));
+    const returnDebtMode = $("returnDebtMode").value;
+
+    // Exit
+    const exitCap = Number($("exitCapPct").value||0)/100;
+    const saleCostPct = Number($("saleCostPct").value||0)/100;
+
+    // Equity
+    const capex = Number($("capex").value||0);
+
+    // Derived
+    const pricePerUnit = purchase / units;
+    const loan = purchase * ltv;
+    const equity = purchase - loan;
+    const totalEquity = equity + capex;
+
+    // NOI
+    let noiIn = NaN;
+    let noiStab = NaN;
+    let vacancyUsed = 0, expenseUsed = 0;
+
+    if (noiMode === "quick"){
+      vacancyUsed = Number($("vacancyPct").value||0)/100;
+      expenseUsed = Number($("expensePct").value||0)/100;
+      noiIn   = calcNOI(units, currentRent, otherIncomeMonthly, vacancyUsed, expenseUsed).noi;
+      noiStab = calcNOI(units, postRent,    otherIncomeMonthly, vacancyUsed, expenseUsed).noi;
+    } else {
+      noiIn = Number($("inPlaceNOIAnnual").value||0);
+      vacancyUsed = Number($("vacancyPctT12").value||0)/100;
+      expenseUsed = Number($("expensePctT12").value||0)/100;
+      noiStab = calcNOI(units, postRent, otherIncomeMonthly, vacancyUsed, expenseUsed).noi;
+    }
+
+    const noiInc = noiStab - noiIn;
+    const noiGrowth = (noiIn !== 0) ? (noiInc / noiIn) : NaN;
+
+    // Value
+    const projValue = exitCap > 0 ? (noiStab / exitCap) : NaN;
+    const valueInc  = exitCap > 0 ? (noiInc  / exitCap) : NaN;
+
+    // Debt service + DSCR
+    const annualPI = pmt(rate, amortYears, loan) * 12;
+    const annualIO = loan * rate;
+
+    const dscrPI = annualPI > 0 ? (noiIn / annualPI) : NaN;
+    const dscrIO = annualIO > 0 ? (noiIn / annualIO) : NaN;
+
+    // Exit proceeds
+    const saleCosts = projValue * saleCostPct;
+    const balAtSale = balanceAfterYears(rate, amortYears, loan, holdYears);
+    const netProceeds = projValue - saleCosts - balAtSale;
+
+    // Cash flow (assume stabilized NOI through hold period; simple underwriting)
+    const annualDebtForReturns = (returnDebtMode === "io") ? annualIO : annualPI;
+    const annualCashFlow = noiStab - annualDebtForReturns;
+    const cumulativeCashFlow = annualCashFlow * holdYears;
+
+    const totalReturn = netProceeds + cumulativeCashFlow;
+    const equityMultiple = totalEquity > 0 ? (totalReturn / totalEquity) : NaN;
+    const avgAnnual = (isFinite(equityMultiple) && equityMultiple > 0)
+      ? (Math.pow(equityMultiple, 1/holdYears) - 1)
+      : NaN;
+
+    // Rent lift (display)
+    const monthlyLift = (postRent - currentRent) * units;
+
+    // Core outputs
+    $("outPricePerUnit").textContent = fmtMoney0(pricePerUnit);
+    $("outLoan").textContent = fmtMoney0(loan);
+    $("outPostRent").textContent = fmtMoney2(postRent);
+    $("outMonthlyLift").textContent = fmtMoney0(monthlyLift) + " / mo";
+
+    $("outNOIInPlace").textContent = fmtMoney0(noiIn);
+    $("outNOIStabilized").textContent = fmtMoney0(noiStab);
+    $("outNOIInc").textContent = fmtMoney0(noiInc);
+    $("outNOIGrowth").textContent = isFinite(noiGrowth) ? fmtPct2(noiGrowth) : "—";
+
+    $("outProjValue").textContent = fmtMoney0(projValue);
+    $("outValueInc").textContent  = fmtMoney0(valueInc);
+
+    $("outNetProceeds").textContent = fmtMoney0(netProceeds);
+    $("outCashFlow").textContent = fmtMoney0(annualCashFlow);
+
+    $("outEquityMultiple").textContent = isFinite(equityMultiple) ? (fmtNum2(equityMultiple) + "×") : "—";
+    $("outAvgAnnual").textContent = isFinite(avgAnnual) ? fmtPct2(avgAnnual) : "—";
+
+    // Right panel badges
+    badge($("outDSCR_PI"), isFinite(dscrPI) ? fmtNum2(dscrPI) : "—",
+      (dscrPI>=1.25) ? "good" : (dscrPI>=1.10 ? "warn" : (isFinite(dscrPI) ? "bad" : "")));
+    badge($("outDSCR_IO"), isFinite(dscrIO) ? fmtNum2(dscrIO) : "—",
+      (dscrIO>=1.25) ? "good" : (dscrIO>=1.10 ? "warn" : (isFinite(dscrIO) ? "bad" : "")));
+
+    badge($("outDebtPI"), fmtMoney0(annualPI) + " / yr");
+    badge($("outDebtIO"), fmtMoney0(annualIO) + " / yr");
+    badge($("outLTV"), (ltv*100).toFixed(0) + "%");
+    badge($("outRate"), (rate*100).toFixed(2) + "%");
+
+    badge($("outNOITakeover"), fmtMoney0(noiIn));
+    badge($("outNOIMarket"), fmtMoney0(noiStab));
+    badge($("outNOIGrowthBadge"), isFinite(noiGrowth) ? fmtPct2(noiGrowth) : "—",
+      (noiGrowth>=0.25) ? "good" : (noiGrowth>=0.10 ? "warn" : (isFinite(noiGrowth) ? "bad" : "")));
+
+    badge($("outProjValueBadge"), fmtMoney0(projValue));
+    badge($("outSaleCosts"), fmtMoney0(saleCosts));
+    badge($("outBalAtSale"), fmtMoney0(balAtSale));
+    badge($("outNetProceedsBadge"), fmtMoney0(netProceeds));
+
+    badge($("outTotalEquity"), fmtMoney0(totalEquity));
+    badge($("outEquityMultipleBadge"), isFinite(equityMultiple) ? (fmtNum2(equityMultiple)+"×") : "—",
+      (equityMultiple>=2.0) ? "good" : (equityMultiple>=1.5 ? "warn" : (isFinite(equityMultiple) ? "bad" : "")));
+    badge($("outAvgAnnualBadge"), isFinite(avgAnnual) ? fmtPct2(avgAnnual) : "—",
+      (avgAnnual>=0.18) ? "good" : (avgAnnual>=0.12 ? "warn" : (isFinite(avgAnnual) ? "bad" : "")));
+
+    // Verdict
+    let verdict = [];
+    if (!isFinite(projValue)) verdict.push("Enter an Exit Cap to compute projected value.");
+    if (!isFinite(noiIn) || !isFinite(noiStab)) verdict.push("Check NOI inputs.");
+    if (isFinite(noiInc)){
+      if (noiInc > 0) verdict.push(`Value-add indicated: NOI +${fmtMoney0(noiInc)} / yr ⇒ ~${fmtMoney0(valueInc)} value lift at ${(exitCap*100).toFixed(2)}% cap.`);
+      else verdict.push("No value-add: Stabilized NOI does not exceed in-place NOI.");
+    }
+    if (isFinite(dscrPI)) verdict.push(`DSCR (P&I) is ${fmtNum2(dscrPI)} (target ≥ 1.25).`);
+    if (isFinite(equityMultiple) && isFinite(avgAnnual)) verdict.push(`Projected returns: ${fmtNum2(equityMultiple)}× equity multiple, ${fmtPct2(avgAnnual)} avg annual return over ${holdYears} yrs.`);
+    $("outVerdict").textContent = verdict.join(" ");
+  }
+
+  document.querySelectorAll("input,select").forEach(el =>
+    el.addEventListener("input", () => { syncUI(); recalc(); })
+  );
+
+  syncUI();
+  recalc();
+</script>
+</body>
+</html>
