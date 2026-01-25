@@ -1,723 +1,1037 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MBPS Deal Analyzer (ARV Tier + 1% Rule on Buyer All-In)</title>
-
-  <!-- PWA (optional / safe if you already have icons) -->
-  <link rel="manifest" href="manifest.json" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f14" />
+  <meta name="description" content="Tony Mont purchase price calculator: investor AS-IS PPSF + tier rules + 1% rule discipline (Buyer All-In) + market spread validation." />
+
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+
+  <title>Tony Mont Purchase Price Calculator</title>
 
   <style>
     :root{
       --bg:#0b0f14;
-      --card:#0f1623;
-      --card2:#0c1320;
-      --text:#e7edf7;
-      --muted:#9fb0c8;
-      --line:#1d2a40;
-      --good:#2dd4bf;
-      --warn:#fbbf24;
-      --bad:#fb7185;
-      --accent:#60a5fa;
-      --shadow: 0 14px 40px rgba(0,0,0,.35);
-      --radius: 18px;
+      --panel: rgba(17,24,39,.92);
+      --panel2: rgba(2,6,23,.40);
+      --line:#1f2937;
+      --line2:#334155;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+
+      --good:#86efac;
+      --warn:#fde68a;
+      --bad:#fca5a5;
+
+      --shadow: 0 12px 40px rgba(0,0,0,.35);
+      --radius: 16px;
+      --radius2: 22px;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       background:
-        radial-gradient(1100px 700px at 10% 0%, rgba(96,165,250,.20), transparent 60%),
-        radial-gradient(900px 600px at 100% 10%, rgba(45,212,191,.16), transparent 55%),
-        radial-gradient(1000px 700px at 30% 100%, rgba(251,113,133,.10), transparent 55%),
+        radial-gradient(1200px 600px at 10% -10%, rgba(56,189,248,.10), transparent 55%),
+        radial-gradient(900px 500px at 90% 10%, rgba(167,139,250,.10), transparent 55%),
+        radial-gradient(900px 600px at 60% 110%, rgba(34,197,94,.08), transparent 55%),
         var(--bg);
+      color:var(--text);
     }
-    .wrap{max-width:1150px;margin:0 auto;padding:24px}
-    header{
-      display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
-      margin-bottom:18px;
+
+    .wrap{ max-width:1160px; margin:0 auto; padding:22px; }
+    .top{
+      display:flex; gap:14px; align-items:flex-start; justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom:14px;
     }
-    .title h1{margin:0;font-size:22px;letter-spacing:.2px}
-    .title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
-    .pillbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
-    .pill{
-      border:1px solid var(--line);
-      background:rgba(15,22,35,.65);
-      padding:10px 12px;border-radius:999px;
-      color:var(--muted);
-      font-size:12px;
-      box-shadow:0 8px 22px rgba(0,0,0,.18);
-      backdrop-filter: blur(6px);
-      display:flex;gap:8px;align-items:center;
-      white-space:nowrap;
+    .brand h1{ margin:0; font-size:20px; letter-spacing:.2px; }
+    .brand p{ margin:6px 0 0; color:var(--muted); font-size:13px; max-width:860px; line-height:1.4; }
+
+    .pwa{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      justify-content:flex-end;
     }
-    .pill b{color:var(--text);font-weight:700}
+    .btn{
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line2);
+      background: rgba(11,18,32,.72);
+      color:var(--text);
+      transition: transform .06s ease, border-color .15s ease;
+    }
+    .btn:hover{ border-color:#64748b; }
+    .btn:active{ transform: translateY(1px); }
+
     .grid{
       display:grid;
-      grid-template-columns: 1.15fr .85fr;
-      gap:16px;
-      align-items:start;
+      gap:14px;
+      grid-template-columns: 1fr;
     }
-    @media (max-width: 980px){
-      .grid{grid-template-columns:1fr}
-      header{flex-direction:column}
-      .pillbar{justify-content:flex-start}
+    @media (min-width: 1000px){
+      .grid{ grid-template-columns: 1.08fr 0.92fr; }
     }
+
     .card{
-      background:linear-gradient(180deg, rgba(15,22,35,.92), rgba(12,19,32,.92));
+      background: var(--panel);
       border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      overflow:hidden;
+      border-radius: var(--radius2);
+      padding:16px;
+      box-shadow: var(--shadow);
     }
-    .card .hd{
-      padding:16px 16px 10px;
-      border-bottom:1px solid rgba(29,42,64,.65);
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    .card h2{
+      margin:0 0 10px;
+      font-size:15px;
+      color: var(--text);
     }
-    .card .hd h2{margin:0;font-size:14px;letter-spacing:.25px}
-    .card .hd .sub{color:var(--muted);font-size:12px}
-    .card .bd{padding:16px}
-    .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width: 560px){ .two{grid-template-columns:1fr} }
-    label{display:block;margin:0 0 6px;color:var(--muted);font-size:12px}
-    input,select{
+    .sub{ color:var(--muted); font-size:12px; margin:0 0 12px; line-height:1.4; }
+
+    .row2{ display:grid; gap:10px; grid-template-columns: 1fr; }
+    .row3{ display:grid; gap:10px; grid-template-columns: 1fr; }
+    @media (min-width: 620px){
+      .row2{ grid-template-columns: 1fr 1fr; }
+      .row3{ grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    input, select{
       width:100%;
-      padding:11px 12px;
-      background:rgba(11,15,20,.75);
-      border:1px solid rgba(29,42,64,.85);
-      border-radius:12px;
-      color:var(--text);
+      padding:10px 10px;
+      border-radius: 12px;
+      border:1px solid var(--line2);
+      background: rgba(11,18,32,.82);
+      color: var(--text);
       outline:none;
     }
-    input:focus,select:focus{border-color:rgba(96,165,250,.8);box-shadow:0 0 0 3px rgba(96,165,250,.15)}
-    .row{margin-bottom:12px}
-    .btnbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    button{
-      border:1px solid rgba(29,42,64,.95);
-      background:rgba(15,22,35,.85);
-      color:var(--text);
-      padding:10px 12px;border-radius:12px;
-      cursor:pointer;
-    }
-    button.primary{
-      background:linear-gradient(180deg, rgba(96,165,250,.95), rgba(59,130,246,.85));
-      border-color:rgba(96,165,250,.95);
-      color:#06101f;
-      font-weight:800;
-    }
-    button.ghost{
-      background:transparent;
-      color:var(--muted);
-    }
-    button:hover{filter:brightness(1.06)}
-    .note{
-      margin-top:10px;
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.35;
-    }
+    input:focus, select:focus{ border-color:#64748b; }
 
-    .results{
-      display:grid;gap:12px;
-    }
-    .kpi{
-      background:linear-gradient(180deg, rgba(15,22,35,.70), rgba(12,19,32,.70));
-      border:1px solid rgba(29,42,64,.85);
-      border-radius:16px;
-      padding:14px;
-    }
-    .kpi .top{
-      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
-      margin-bottom:8px;
-    }
-    .kpi .top .lbl{color:var(--muted);font-size:12px}
-    .kpi .top .val{font-size:20px;font-weight:900;letter-spacing:.2px}
-    .kpi .meta{display:flex;flex-wrap:wrap;gap:8px}
-    .tag{
-      font-size:12px;
-      padding:7px 10px;
-      border-radius:999px;
-      border:1px solid rgba(29,42,64,.95);
-      background:rgba(11,15,20,.55);
-      color:var(--muted);
-    }
-    .tag.good{border-color:rgba(45,212,191,.55);color:rgba(45,212,191,.95)}
-    .tag.warn{border-color:rgba(251,191,36,.55);color:rgba(251,191,36,.95)}
-    .tag.bad{border-color:rgba(251,113,133,.55);color:rgba(251,113,133,.95)}
-    .line{
-      height:1px;background:rgba(29,42,64,.7);margin:10px 0;
-    }
-    .mini{
-      display:grid;gap:8px;
-      font-size:12px;color:var(--muted);
-    }
-    .mini div{display:flex;justify-content:space-between;gap:10px}
-    .mini b{color:var(--text)}
-    .toggle{
-      display:flex;gap:8px;flex-wrap:wrap;align-items:center;
-    }
-    .seg{
-      display:flex;
-      background:rgba(11,15,20,.55);
-      border:1px solid rgba(29,42,64,.9);
-      border-radius:999px;
+    table{
+      width:100%;
+      border-collapse: collapse;
+      border-radius: 14px;
       overflow:hidden;
+      border:1px solid var(--line);
+      background: rgba(2,6,23,.25);
     }
-    .seg button{
-      border:none;border-right:1px solid rgba(29,42,64,.8);
-      border-radius:0;margin:0;
-      padding:8px 10px;font-size:12px;color:var(--muted);
-      background:transparent;
+    th,td{
+      padding:10px;
+      border-bottom: 1px solid var(--line);
+      font-size:13px;
+      vertical-align: middle;
     }
-    .seg button:last-child{border-right:none}
-    .seg button.active{
-      background:rgba(96,165,250,.18);
-      color:var(--text);
-      font-weight:800;
+    th{
+      text-align:left;
+      color: var(--muted);
+      background: rgba(2,6,23,.40);
+      font-weight:600;
     }
-    .warnbox{
-      padding:12px 12px;
-      border-radius:14px;
-      border:1px dashed rgba(251,191,36,.55);
-      background:rgba(251,191,36,.08);
-      color:rgba(251,191,36,.95);
+    tr:last-child td{ border-bottom:none; }
+
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(2,6,23,.35);
       font-size:12px;
-      line-height:1.35;
+      color: var(--muted);
+      white-space:nowrap;
     }
-    .badbox{
-      padding:12px 12px;
-      border-radius:14px;
-      border:1px dashed rgba(251,113,133,.55);
-      background:rgba(251,113,133,.08);
-      color:rgba(251,113,133,.95);
-      font-size:12px;
-      line-height:1.35;
+    .good{ color:var(--good); border-color: rgba(34,197,94,.35); }
+    .warn{ color:var(--warn); border-color: rgba(234,179,8,.35); }
+    .bad{ color:var(--bad); border-color: rgba(239,68,68,.35); }
+
+    .kpis{
+      display:grid;
+      gap:10px;
+      grid-template-columns: 1fr;
     }
-    .goodbox{
-      padding:12px 12px;
-      border-radius:14px;
-      border:1px dashed rgba(45,212,191,.55);
-      background:rgba(45,212,191,.08);
-      color:rgba(45,212,191,.95);
-      font-size:12px;
-      line-height:1.35;
+    @media (min-width: 560px){
+      .kpis{ grid-template-columns: 1fr 1fr; }
     }
 
-    /* Print */
-    @media print{
-      body{background:#fff;color:#000}
-      .wrap{max-width:900px;padding:0}
-      header .pillbar, .btnbar, .note, .seg, .title p{display:none !important}
-      .card, .kpi{box-shadow:none !important}
-      .card{border:1px solid #ddd}
-      .kpi{border:1px solid #ddd}
-      input,select{border:1px solid #ccc;background:#fff;color:#000}
-      .tag{border:1px solid #bbb;color:#000;background:#fff}
-      .tag.good,.tag.warn,.tag.bad{border-color:#bbb;color:#000}
-      .warnbox,.badbox,.goodbox{border:1px solid #bbb;background:#fff;color:#000}
+    .kpi{
+      background: var(--panel2);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      padding:12px;
+    }
+    .kpi .label{ color:var(--muted); font-size:12px; }
+    .kpi .value{ margin-top:6px; font-size:22px; font-weight:750; }
+    .kpi .note{ margin-top:4px; color:var(--muted); font-size:12px; }
+
+    .footer{
+      margin-top:14px;
+      padding-top:12px;
+      border-top: 1px dashed var(--line2);
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+
+    /* ---------------- PRINT STYLES (results-only, clean) ---------------- */
+    @media print {
+      body {
+        background: white !important;
+        color: #000 !important;
+      }
+
+      /* Hide interactive UI / inputs */
+      .pwa,
+      .actions,
+      button,
+      input,
+      select,
+      .sub,
+      .footer,
+      table,
+      #addRowBtn,
+      #installBtn,
+      #copyBtn,
+      #resetBtn {
+        display: none !important;
+      }
+
+      .wrap {
+        max-width: 100% !important;
+        padding: 0 !important;
+      }
+
+      .card {
+        box-shadow: none !important;
+        border: none !important;
+        background: white !important;
+        page-break-inside: avoid;
+        padding: 0 !important;
+      }
+
+      /* Only show the Results card */
+      .grid {
+        grid-template-columns: 1fr !important;
+      }
+      .grid > .card:first-child {
+        display: none !important;
+      }
+
+      .pill {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        background: none !important;
+      }
+
+      .kpi {
+        border: 1px solid #ccc !important;
+        background: #f9f9f9 !important;
+      }
+
+      h1, h2 {
+        color: #000 !important;
+      }
     }
   </style>
 </head>
-
 <body>
   <div class="wrap">
-    <header>
-      <div class="title">
-        <h1>MBPS Deal Analyzer</h1>
+    <div class="top">
+      <div class="brand">
+        <h1>Tony Mont Purchase Price Calculator</h1>
         <p>
+          Investor AS-IS comps → Avg Investor $/SqFt → Investor Value → Offer (minus wholesale fee).
           <b>ARV only determines tier.</b>
-          <b>1% rule is based on Buyer All-In</b> = (Seller Price + Wholesale Fee + Rehab + Closing).
-          Includes print + address, market spread validation, and localStorage persistence.
+          <b>1% rule is based on Buyer All-In</b> = (Seller Price + Wholesale Fee + Rehab + Closing/Holding).
+          Includes optional Market Spread Validation using your actual contract price.
         </p>
       </div>
-
-      <div class="pillbar">
-        <div class="pill">Tier Multiplier: <b id="pillTierMult">—</b></div>
-        <div class="pill">Tier: <b id="pillTier">—</b></div>
-        <div class="pill">Buyer All-In: <b id="pillAllIn">—</b></div>
-        <div class="pill">1% Rule: <b id="pillOnePct">—</b></div>
+      <div class="pwa">
+        <button class="btn" id="installBtn" style="display:none;">Install</button>
+        <button class="btn" id="printBtn">Print</button>
+        <button class="btn" id="copyBtn">Copy Summary</button>
+        <button class="btn" id="resetBtn">Reset</button>
       </div>
-    </header>
+    </div>
 
     <div class="grid">
-      <!-- INPUTS -->
+      <!-- LEFT -->
       <div class="card">
-        <div class="hd">
+        <h2>Deal Inputs</h2>
+        <p class="sub">
+          Tier A needs 3 comps. Tiers B/B+/C require 6 comps. B+ auto-prices to stricter exit (min of PPSF offer vs 1% hold cap). C must pass 1% all-in.
+        </p>
+
+        <!-- Address -->
+        <div class="row2" style="margin-bottom:10px;">
           <div>
-            <h2>Deal Inputs</h2>
-            <div class="sub">Enter what you know. Everything auto-calculates.</div>
-          </div>
-          <div class="toggle">
-            <span class="sub">Spread compare:</span>
-            <div class="seg" role="tablist" aria-label="Market compare mode">
-              <button id="btnCompareRenovated" type="button" class="active">Renovated (ARV)</button>
-              <button id="btnCompareAsIs" type="button">As-Is Value</button>
-            </div>
+            <label>Property Address</label>
+            <input id="propertyAddress" type="text" placeholder="e.g., 1407 Camp Jackson Rd, East St Louis, IL 62206" />
           </div>
         </div>
 
-        <div class="bd">
-          <div class="row">
-            <label for="address">Property Address (prints on results)</label>
-            <input id="address" type="text" placeholder="123 Main St, City, ST 12345" />
+        <div class="row3">
+          <div>
+            <label>ARV (After Repair Value)</label>
+            <input id="arv" type="number" inputmode="decimal" placeholder="e.g., 330000" />
           </div>
-
-          <div class="two">
-            <div class="row">
-              <label for="arv">ARV (After Repair Value)</label>
-              <input id="arv" type="number" inputmode="decimal" placeholder="250000" />
-            </div>
-            <div class="row">
-              <label for="rent">Estimated Monthly Rent</label>
-              <input id="rent" type="number" inputmode="decimal" placeholder="1400" />
-            </div>
+          <div>
+            <label>Subject Sq Ft</label>
+            <input id="subjectSqft" type="number" inputmode="decimal" placeholder="e.g., 2095" />
           </div>
-
-          <div class="two">
-            <div class="row">
-              <label for="sellerPrice">Seller Price (Contract Price)</label>
-              <input id="sellerPrice" type="number" inputmode="decimal" placeholder="38000" />
-            </div>
-            <div class="row">
-              <label for="wholesaleFee">Wholesale Fee</label>
-              <input id="wholesaleFee" type="number" inputmode="decimal" placeholder="12000" />
-            </div>
+          <div>
+            <label>Wholesale Fee (your spread)</label>
+            <input id="wholesaleFee" type="number" inputmode="decimal" placeholder="e.g., 15000" />
           </div>
+        </div>
 
-          <div class="two">
-            <div class="row">
-              <label for="rehab">Rehab (Repairs)</label>
-              <input id="rehab" type="number" inputmode="decimal" placeholder="45000" />
-            </div>
-            <div class="row">
-              <label for="closing">Closing Costs (Buyer side)</label>
-              <input id="closing" type="number" inputmode="decimal" placeholder="5000" />
-            </div>
+        <div class="row3" style="margin-top:10px;">
+          <div>
+            <label>Monthly Market Rent (needed for B+/C discipline)</label>
+            <input id="monthlyRent" type="number" inputmode="decimal" placeholder="e.g., 1400" />
           </div>
-
-          <div class="two">
-            <div class="row">
-              <label for="asIsValue">As-Is Market Value (only used if Compare=As-Is)</label>
-              <input id="asIsValue" type="number" inputmode="decimal" placeholder="90000" />
-            </div>
-            <div class="row">
-              <label for="customTier">Tier Override (optional)</label>
-              <select id="customTier">
-                <option value="">Auto (based on ARV)</option>
-                <option value="0.70">0.70</option>
-                <option value="0.72">0.72</option>
-                <option value="0.75">0.75</option>
-                <option value="0.78">0.78</option>
-                <option value="0.80">0.80</option>
-              </select>
-            </div>
+          <div>
+            <label>Rehab Estimate (recommended)</label>
+            <input id="rehab" type="number" inputmode="decimal" placeholder="e.g., 60000" />
           </div>
-
-          <div class="line"></div>
-
-          <div class="two">
-            <div class="row">
-              <label for="minSpreadPct">Min Spread % (validation threshold)</label>
-              <input id="minSpreadPct" type="number" inputmode="decimal" placeholder="15" />
-            </div>
-            <div class="row">
-              <label for="minSpreadDollars">Min Spread $ (validation threshold)</label>
-              <input id="minSpreadDollars" type="number" inputmode="decimal" placeholder="15000" />
-            </div>
+          <div>
+            <label>Closing/Holding (optional)</label>
+            <input id="closingHolding" type="number" inputmode="decimal" placeholder="e.g., 5000" />
           </div>
+        </div>
 
-          <div class="btnbar">
-            <button class="primary" type="button" id="btnPrint">Print Results</button>
-            <button class="ghost" type="button" id="btnReset">Reset</button>
-          </div>
+        <!-- Market Spread Validation -->
+        <h2 style="margin-top:16px;">Market Spread Validation (Optional Override)</h2>
+        <p class="sub">
+          This does NOT change your calculator offer. It answers: “Is my <b>contract price</b> still a deal versus current market after round-trip friction, repairs (if renovated), and fee?”
+        </p>
 
-          <div class="note">
-            Notes:
-            <ul>
-              <li><b>Buyer All-In</b> = Seller Price + Wholesale Fee + Rehab + Closing</li>
-              <li><b>1% Rule</b> uses Buyer All-In (not seller price)</li>
-              <li><b>Tier</b> is determined by ARV only (unless overridden)</li>
-              <li><b>Market Spread</b> compares Buyer All-In to Renovated (ARV) or As-Is value (toggle)</li>
-            </ul>
+        <div class="row3">
+          <div>
+            <label>Contract Price (your current purchase price)</label>
+            <input id="contractPrice" type="number" inputmode="decimal" placeholder="e.g., 320000" />
           </div>
+          <div>
+            <label>Market Price (market-clearing)</label>
+            <input id="marketPrice" type="number" inputmode="decimal" placeholder="e.g., 385000" />
+          </div>
+          <div>
+            <label>Market Price Type</label>
+            <select id="marketPriceType">
+              <option value="renovated" selected>Renovated / Retail (subtract rehab)</option>
+              <option value="asis">As-Is (do NOT subtract rehab)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row3" style="margin-top:10px;">
+          <div>
+            <label>Round-trip Friction % (buy+sell, default 10)</label>
+            <input id="frictionPct" type="number" inputmode="decimal" placeholder="10" />
+          </div>
+          <div>
+            <label>Pass/Fail Threshold</label>
+            <input id="spreadThresholdMode" type="text" value="AUTO: max($10k, 3% of contract)" disabled />
+          </div>
+          <div>
+            <label>Notes (optional)</label>
+            <input id="marketNotes" type="text" placeholder="e.g., based on pending comps / strongest list price" />
+          </div>
+        </div>
+
+        <h2 style="margin-top:16px;">Investor “AS-IS” Purchase Comps</h2>
+        <p class="sub">Enter investor acquisition prices (NOT retail sales) and square footage. Calculator averages $/SqFt across valid comps.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:44px;">#</th>
+              <th>Comp Purchase Price</th>
+              <th>Comp Sq Ft</th>
+              <th>Comp $/SqFt</th>
+            </tr>
+          </thead>
+          <tbody id="compBody"></tbody>
+        </table>
+
+        <div class="actions">
+          <button class="btn" id="addRowBtn">+ Add Comp</button>
+          <span class="pill mono" id="compReqPill">Required comps: —</span>
+          <span class="pill mono" id="validCompPill">Valid comps: 0</span>
+        </div>
+
+        <div class="footer">
+          Guardrails: Use comps from the same submarket. Avoid crossing major boundaries. Keep comps investor acquisitions (LLC/cash/hard money). Don’t mix retail PPSF.
         </div>
       </div>
 
-      <!-- RESULTS -->
-      <div class="results">
-        <div class="kpi">
-          <div class="top">
-            <div>
-              <div class="lbl">Property</div>
-              <div class="val" id="outAddress">—</div>
-            </div>
+      <!-- RIGHT -->
+      <div class="card" id="resultsCard">
+        <h2>Results</h2>
+
+        <!-- Print-visible Address + Date -->
+        <div class="kpis" style="margin-bottom:10px;">
+          <div class="kpi">
+            <div class="label">Property Address</div>
+            <div class="value mono" id="printAddress">—</div>
+            <div class="note">Included on printed summary</div>
           </div>
-          <div class="mini">
-            <div><span>ARV</span><b id="outARV">—</b></div>
-            <div><span>Rent</span><b id="outRent">—</b></div>
+          <div class="kpi">
+            <div class="label">Prepared On</div>
+            <div class="value mono" id="preparedOn">—</div>
+            <div class="note">Auto-generated</div>
           </div>
         </div>
 
-        <div class="kpi">
-          <div class="top">
-            <div>
-              <div class="lbl">Buyer All-In (for 1% rule)</div>
-              <div class="val" id="outAllIn">—</div>
-            </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+          <span class="pill mono" id="tierPill">Tier: —</span>
+          <span class="pill mono" id="exitPill">Exit: —</span>
+          <span class="pill mono" id="ppsfpill">Avg PPSF: —</span>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi">
+            <div class="label">Subject Investor Value (Avg PPSF × Subject Sq Ft)</div>
+            <div class="value mono" id="investorValue">$0</div>
+            <div class="note">Market-anchored investor entry value</div>
           </div>
-          <div class="meta">
-            <span class="tag" id="tagAllInBreak">Seller + Fee + Rehab + Closing</span>
-            <span class="tag" id="tagOnePct">1% Rule: —</span>
+
+          <div class="kpi">
+            <div class="label">PPSF Offer (Investor Value − Wholesale Fee)</div>
+            <div class="value mono" id="ppsfOffer">$0</div>
+            <div class="note">Core Tony Mont offer (before tier discipline)</div>
           </div>
-          <div class="line"></div>
-          <div class="mini">
-            <div><span>Seller Price</span><b id="outSeller">—</b></div>
-            <div><span>Wholesale Fee</span><b id="outFee">—</b></div>
-            <div><span>Rehab</span><b id="outRehab">—</b></div>
-            <div><span>Closing</span><b id="outClosing">—</b></div>
+
+          <div class="kpi">
+            <div class="label">Hold Max Offer (Rent×100 − Fee − Rehab − Closing)</div>
+            <div class="value mono" id="holdMaxOffer">$0</div>
+            <div class="note">1% rule cap (discipline anchor)</div>
+          </div>
+
+          <div class="kpi">
+            <div class="label">Final Offer (tier disciplined)</div>
+            <div class="value mono" id="finalOffer">$0</div>
+            <div class="note" id="finalOfferNote">—</div>
+          </div>
+
+          <!-- ✅ UPDATED: Buyer All-In includes Fee -->
+          <div class="kpi">
+            <div class="label">Buyer All-In (Final Offer + Fee + Rehab + Closing)</div>
+            <div class="value mono" id="allIn">$0</div>
+            <div class="note">Used for 1% validation</div>
+          </div>
+
+          <div class="kpi">
+            <div class="label">1% Rule Max All-In (Rent × 100)</div>
+            <div class="value mono" id="onePctMax">$0</div>
+            <div class="note">Buyer all-in must be ≤ this for hold logic</div>
           </div>
         </div>
 
-        <div class="kpi">
-          <div class="top">
-            <div>
-              <div class="lbl">Tier + Suggested Max Seller Price</div>
-              <div class="val" id="outMaxSeller">—</div>
-            </div>
+        <!-- Market Spread Outputs -->
+        <div class="footer">
+          <h2 style="margin:0 0 10px; font-size:15px;">Market Spread Validation</h2>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+            <span class="pill mono" id="marketCheckPill">Market check: —</span>
+            <span class="pill mono" id="marketSpreadPill">Spread: —</span>
+            <span class="pill mono" id="thresholdPill">Threshold: —</span>
           </div>
-          <div class="meta">
-            <span class="tag" id="tagTier">Tier: —</span>
-            <span class="tag" id="tagMult">Multiplier: —</span>
-          </div>
-          <div class="line"></div>
-          <div class="mini">
-            <div><span>Formula</span><b id="outTierFormula">—</b></div>
-            <div><span>Max All-In Allowed (Tier)</span><b id="outMaxAllInAllowed">—</b></div>
-          </div>
-        </div>
 
-        <div class="kpi">
-          <div class="top">
-            <div>
-              <div class="lbl">Market Spread Validation</div>
-              <div class="val" id="outSpread">—</div>
+          <div class="kpis" style="margin-top:10px;">
+            <div class="kpi">
+              <div class="label">Net Market Value (NMV)</div>
+              <div class="value mono" id="nmv">$0</div>
+              <div class="note" id="nmvNote">NMV = Market − (Market×Friction%) − Fee − (Rehab if Renovated)</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Contract Price vs NMV</div>
+              <div class="value mono" id="contractVsNmv">$0</div>
+              <div class="note" id="contractVsNmvNote">—</div>
             </div>
           </div>
-          <div class="meta">
-            <span class="tag" id="tagSpreadPct">Spread %: —</span>
-            <span class="tag" id="tagCompareMode">Compare: —</span>
+
+          <div style="margin-top:12px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <span class="pill mono" id="compCheckPill">Comps check: —</span>
+              <span class="pill mono" id="tierCheckPill">Tier check: —</span>
+              <span class="pill mono" id="onePctCheckPill">1% check: —</span>
+            </div>
           </div>
-          <div class="line"></div>
-          <div id="validationBox" class="warnbox">
-            Enter ARV (and As-Is value if using As-Is compare) to validate spread.
-          </div>
-          <div class="line"></div>
-          <div class="mini">
-            <div><span>Selected Market Value</span><b id="outMarketValue">—</b></div>
-            <div><span>Min Spread %</span><b id="outMinSpreadPct">—</b></div>
-            <div><span>Min Spread $</span><b id="outMinSpreadDollars">—</b></div>
-          </div>
+
         </div>
 
       </div>
     </div>
   </div>
 
-  <script>
-    // ----------------------------
-    // Helpers
-    // ----------------------------
-    const $ = (id) => document.getElementById(id);
-    const fmtMoney = (n) => {
-      const x = Number(n);
-      if (!isFinite(x)) return "—";
-      return x.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-    };
-    const fmtPct = (n) => {
-      const x = Number(n);
-      if (!isFinite(x)) return "—";
-      return (x * 100).toFixed(1) + "%";
-    };
-    const clamp0 = (n) => (isFinite(n) ? Math.max(0, n) : 0);
-    const num = (v) => {
-      const x = Number(String(v ?? "").trim());
-      return isFinite(x) ? x : 0;
-    };
+<script>
+  // ---------------- PWA install ----------------
+  let deferredPrompt = null;
+  const installBtn = document.getElementById("installBtn");
 
-    // ----------------------------
-    // Tier logic (ARV ONLY determines tier)
-    // You can adjust brackets here without changing the rest of the app.
-    // ----------------------------
-    function getTierMultiplier(arv){
-      // Default tier brackets:
-      // <150k = 0.70
-      // 150k-299,999 = 0.72
-      // 300k-499,999 = 0.75
-      // 500k-749,999 = 0.78
-      // 750k+ = 0.80
-      if (arv < 150000) return 0.70;
-      if (arv < 300000) return 0.72;
-      if (arv < 500000) return 0.75;
-      if (arv < 750000) return 0.78;
-      return 0.80;
-    }
-    function getTierName(mult){
-      if (mult === 0.70) return "Tier 1";
-      if (mult === 0.72) return "Tier 2";
-      if (mult === 0.75) return "Tier 3";
-      if (mult === 0.78) return "Tier 4";
-      if (mult === 0.80) return "Tier 5";
-      return "Tier";
-    }
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = "inline-block";
+  });
 
-    // ----------------------------
-    // State
-    // ----------------------------
-    const STORAGE_KEY = "mbps_deal_analyzer_v3";
-    let compareMode = "renovated"; // "renovated" | "asis"
+  installBtn.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    installBtn.style.display = "none";
+  });
 
-    function setCompareMode(mode){
-      compareMode = mode === "asis" ? "asis" : "renovated";
-      $("btnCompareRenovated").classList.toggle("active", compareMode === "renovated");
-      $("btnCompareAsIs").classList.toggle("active", compareMode === "asis");
-      $("asIsValue").disabled = (compareMode !== "asis");
-      recalc();
-      persist();
-    }
-
-    // ----------------------------
-    // Calculation core
-    // ----------------------------
-    function recalc(){
-      const address = ($("address").value || "").trim();
-      const arv = clamp0(num($("arv").value));
-      const rent = clamp0(num($("rent").value));
-
-      const seller = clamp0(num($("sellerPrice").value));
-      const fee = clamp0(num($("wholesaleFee").value));
-      const rehab = clamp0(num($("rehab").value));
-      const closing = clamp0(num($("closing").value));
-
-      const asIsValue = clamp0(num($("asIsValue").value));
-
-      const minSpreadPct = clamp0(num($("minSpreadPct").value || 0)) / 100;
-      const minSpreadDollars = clamp0(num($("minSpreadDollars").value || 0));
-
-      // ✅ Buyer All-In is used for 1% rule
-      const buyerAllIn = seller + fee + rehab + closing;
-
-      // Tier multiplier: ARV only determines tier (unless override chosen)
-      const override = $("customTier").value ? Number($("customTier").value) : null;
-      const mult = override && isFinite(override) ? override : getTierMultiplier(arv);
-      const tierName = getTierName(mult) + (override ? " (Override)" : "");
-
-      // Tier max all-in allowed and max seller price suggestion
-      // MaxAllInAllowed = ARV * mult
-      // MaxSeller = (ARV*mult) - fee - rehab - closing
-      const maxAllInAllowed = arv * mult;
-      const maxSeller = maxAllInAllowed - fee - rehab - closing;
-
-      // Market spread validation
-      // Compare to Renovated (ARV) or As-Is value depending on toggle.
-      const marketValue = (compareMode === "asis") ? asIsValue : arv;
-      const spreadDollars = marketValue - buyerAllIn;
-      const spreadPct = marketValue > 0 ? (spreadDollars / marketValue) : NaN;
-
-      // 1% rule check
-      const onePctRatio = buyerAllIn > 0 ? (rent / buyerAllIn) : NaN;
-      const passesOnePct = isFinite(onePctRatio) && onePctRatio >= 0.01;
-
-      // ----------------------------
-      // Output
-      // ----------------------------
-      $("outAddress").textContent = address || "—";
-      $("outARV").textContent = fmtMoney(arv);
-      $("outRent").textContent = fmtMoney(rent);
-
-      $("outSeller").textContent = fmtMoney(seller);
-      $("outFee").textContent = fmtMoney(fee);
-      $("outRehab").textContent = fmtMoney(rehab);
-      $("outClosing").textContent = fmtMoney(closing);
-
-      $("outAllIn").textContent = fmtMoney(buyerAllIn);
-
-      $("tagAllInBreak").textContent = "All-In = Seller + Fee + Rehab + Closing";
-      $("tagOnePct").textContent = "1% Rule: " + (isFinite(onePctRatio) ? fmtPct(onePctRatio) : "—");
-      $("tagOnePct").className = "tag " + (passesOnePct ? "good" : (buyerAllIn > 0 ? "warn" : ""));
-
-      $("tagTier").textContent = "Tier: " + tierName;
-      $("tagMult").textContent = "Multiplier: " + (isFinite(mult) ? mult.toFixed(2) : "—");
-      $("outMaxAllInAllowed").textContent = fmtMoney(maxAllInAllowed);
-
-      const formula = isFinite(arv) && arv > 0
-        ? `Max Seller = (ARV × ${mult.toFixed(2)}) − Fee − Rehab − Closing`
-        : "Enter ARV to compute tier formula";
-      $("outTierFormula").textContent = formula;
-      $("outMaxSeller").textContent = fmtMoney(maxSeller);
-
-      // Spread outputs
-      $("outMarketValue").textContent = fmtMoney(marketValue);
-      $("outSpread").textContent = isFinite(spreadDollars) ? fmtMoney(spreadDollars) : "—";
-      $("tagSpreadPct").textContent = "Spread %: " + (isFinite(spreadPct) ? fmtPct(spreadPct) : "—");
-      $("outMinSpreadPct").textContent = (minSpreadPct ? (minSpreadPct*100).toFixed(0) + "%" : "0%");
-      $("outMinSpreadDollars").textContent = fmtMoney(minSpreadDollars);
-
-      $("tagCompareMode").textContent = "Compare: " + (compareMode === "asis" ? "As-Is Value" : "Renovated (ARV)");
-      $("tagCompareMode").className = "tag";
-
-      // Validation logic (intact, with Renovated vs As-Is toggle)
-      // PASS requires:
-      // - marketValue present (>0)
-      // - spread dollars >= minSpreadDollars
-      // - spread pct >= minSpreadPct
-      // - AND buyerAllIn should not exceed tier max all-in allowed (optional guard)
-      const hasMarket = marketValue > 0;
-      const passSpreadDollars = hasMarket && spreadDollars >= minSpreadDollars;
-      const passSpreadPct = hasMarket && isFinite(spreadPct) && spreadPct >= minSpreadPct;
-      const passTierAllIn = isFinite(maxAllInAllowed) ? (buyerAllIn <= maxAllInAllowed) : true;
-
-      // Box messaging
-      const box = $("validationBox");
-
-      if (!hasMarket){
-        box.className = "warnbox";
-        box.textContent = (compareMode === "asis")
-          ? "Enter an As-Is value to validate market spread."
-          : "Enter ARV to validate market spread.";
-      } else if (buyerAllIn <= 0){
-        box.className = "warnbox";
-        box.textContent = "Enter pricing inputs to validate spread (Seller, Fee, Rehab, Closing).";
-      } else {
-        const issues = [];
-        if (!passSpreadDollars) issues.push(`Spread $ below minimum (${fmtMoney(spreadDollars)} < ${fmtMoney(minSpreadDollars)})`);
-        if (!passSpreadPct) issues.push(`Spread % below minimum (${isFinite(spreadPct)?fmtPct(spreadPct):"—"} < ${(minSpreadPct*100).toFixed(0)}%)`);
-        if (!passTierAllIn) issues.push(`Buyer All-In exceeds tier max (${fmtMoney(buyerAllIn)} > ${fmtMoney(maxAllInAllowed)})`);
-
-        if (issues.length === 0){
-          box.className = "goodbox";
-          box.textContent = "PASS: Spread + tier check look acceptable based on your thresholds.";
-        } else if (issues.length === 1){
-          box.className = "warnbox";
-          box.textContent = "CHECK: " + issues[0];
-        } else {
-          box.className = "badbox";
-          box.textContent = "FAIL:\n- " + issues.join("\n- ");
-        }
-      }
-
-      // Header pills
-      $("pillTierMult").textContent = isFinite(mult) ? mult.toFixed(2) : "—";
-      $("pillTier").textContent = tierName;
-      $("pillAllIn").textContent = fmtMoney(buyerAllIn);
-      $("pillOnePct").textContent = (isFinite(onePctRatio) ? fmtPct(onePctRatio) : "—");
-
-      // Disable As-Is input if not used
-      $("asIsValue").disabled = (compareMode !== "asis");
-    }
-
-    // ----------------------------
-    // Persistence (LocalStorage intact)
-    // ----------------------------
-    function persist(){
-      const payload = {
-        compareMode,
-        address: $("address").value,
-        arv: $("arv").value,
-        rent: $("rent").value,
-        sellerPrice: $("sellerPrice").value,
-        wholesaleFee: $("wholesaleFee").value,
-        rehab: $("rehab").value,
-        closing: $("closing").value,
-        asIsValue: $("asIsValue").value,
-        customTier: $("customTier").value,
-        minSpreadPct: $("minSpreadPct").value,
-        minSpreadDollars: $("minSpreadDollars").value
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    }
-
-    function restore(){
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const p = JSON.parse(raw);
-
-        $("address").value = p.address ?? "";
-        $("arv").value = p.arv ?? "";
-        $("rent").value = p.rent ?? "";
-        $("sellerPrice").value = p.sellerPrice ?? "";
-        $("wholesaleFee").value = p.wholesaleFee ?? "";
-        $("rehab").value = p.rehab ?? "";
-        $("closing").value = p.closing ?? "";
-        $("asIsValue").value = p.asIsValue ?? "";
-        $("customTier").value = p.customTier ?? "";
-        $("minSpreadPct").value = (p.minSpreadPct ?? "15");
-        $("minSpreadDollars").value = (p.minSpreadDollars ?? "15000");
-
-        setCompareMode(p.compareMode || "renovated");
-      } catch(e){
-        // If corrupted, ignore safely
-      }
-    }
-
-    function resetAll(){
-      localStorage.removeItem(STORAGE_KEY);
-      $("address").value = "";
-      $("arv").value = "";
-      $("rent").value = "";
-      $("sellerPrice").value = "";
-      $("wholesaleFee").value = "";
-      $("rehab").value = "";
-      $("closing").value = "";
-      $("asIsValue").value = "";
-      $("customTier").value = "";
-      $("minSpreadPct").value = "15";
-      $("minSpreadDollars").value = "15000";
-      setCompareMode("renovated");
-      recalc();
-    }
-
-    // ----------------------------
-    // Events
-    // ----------------------------
-    const inputs = [
-      "address","arv","rent","sellerPrice","wholesaleFee","rehab","closing",
-      "asIsValue","customTier","minSpreadPct","minSpreadDollars"
-    ];
-    inputs.forEach(id=>{
-      $(id).addEventListener("input", ()=>{ recalc(); persist(); });
-      $(id).addEventListener("change", ()=>{ recalc(); persist(); });
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
     });
+  }
 
-    $("btnCompareRenovated").addEventListener("click", ()=>setCompareMode("renovated"));
-    $("btnCompareAsIs").addEventListener("click", ()=>setCompareMode("asis"));
+  // ---------------- Helpers ----------------
+  const money = (n) => {
+    const x = Number.isFinite(n) ? n : 0;
+    return x.toLocaleString(undefined, { style:"currency", currency:"USD", maximumFractionDigits:0 });
+  };
+  const num = (v) => {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+  };
 
-    $("btnPrint").addEventListener("click", ()=>{
-      recalc(); // ensure latest
-      window.print();
-    });
+  function todayStamp(){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
 
-    $("btnReset").addEventListener("click", resetAll);
+  // ---------------- Tier model (ARV ONLY determines tier) ----------------
+  function getTier(arv){
+    if (arv >= 400000) return "A";
+    if (arv >= 350000 && arv < 400000) return "B+";
+    if (arv >= 200000 && arv < 350000) return "B";
+    if (arv > 0 && arv < 200000) return "C";
+    return "—";
+  }
 
-    // ----------------------------
-    // Init
-    // ----------------------------
-    // Defaults that work even on first load
-    if (!$("minSpreadPct").value) $("minSpreadPct").value = "15";
-    if (!$("minSpreadDollars").value) $("minSpreadDollars").value = "15000";
+  function compsRequired(tier){
+    if (tier === "A") return 3;
+    return 6; // B, B+, C
+  }
 
-    restore();
+  function exitForTier(tier, onePctPass){
+    if (tier === "A") return "Fix & Flip ONLY";
+    if (tier === "B") return "Flip OR Buy & Hold";
+    if (tier === "B+") return onePctPass === true ? "Flip OR Buy & Hold (passes 1%)" : "Fix & Flip (hold fails 1%)";
+    if (tier === "C") return "Buy & Hold ONLY";
+    return "—";
+  }
+
+  // ---------------- DOM ----------------
+  const ids = [
+    "propertyAddress",
+    "arv","subjectSqft","wholesaleFee","monthlyRent","rehab","closingHolding",
+    "contractPrice","marketPrice","marketPriceType","frictionPct","marketNotes"
+  ];
+  ids.forEach(id => document.getElementById(id).addEventListener("input", recalc));
+  document.getElementById("marketPriceType").addEventListener("change", recalc);
+
+  const compBody = document.getElementById("compBody");
+  const addRowBtn = document.getElementById("addRowBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const copyBtn = document.getElementById("copyBtn");
+  const printBtn = document.getElementById("printBtn");
+
+  const tierPill = document.getElementById("tierPill");
+  const exitPill = document.getElementById("exitPill");
+  const ppsfpill = document.getElementById("ppsfpill");
+
+  const investorValueEl = document.getElementById("investorValue");
+  const ppsfOfferEl = document.getElementById("ppsfOffer");
+  const holdMaxOfferEl = document.getElementById("holdMaxOffer");
+  const finalOfferEl = document.getElementById("finalOffer");
+  const finalOfferNoteEl = document.getElementById("finalOfferNote");
+  const allInEl = document.getElementById("allIn");
+  const onePctMaxEl = document.getElementById("onePctMax");
+
+  const compReqPill = document.getElementById("compReqPill");
+  const validCompPill = document.getElementById("validCompPill");
+
+  const compCheckPill = document.getElementById("compCheckPill");
+  const tierCheckPill = document.getElementById("tierCheckPill");
+  const onePctCheckPill = document.getElementById("onePctCheckPill");
+
+  // Market spread DOM
+  const marketCheckPill = document.getElementById("marketCheckPill");
+  const marketSpreadPill = document.getElementById("marketSpreadPill");
+  const thresholdPill = document.getElementById("thresholdPill");
+  const nmvEl = document.getElementById("nmv");
+  const nmvNoteEl = document.getElementById("nmvNote");
+  const contractVsNmvEl = document.getElementById("contractVsNmv");
+  const contractVsNmvNoteEl = document.getElementById("contractVsNmvNote");
+
+  // print-visible fields
+  const printAddressEl = document.getElementById("printAddress");
+  const preparedOnEl = document.getElementById("preparedOn");
+
+  printBtn.addEventListener("click", () => window.print());
+
+  // Defaults
+  (function setDefaults(){
+    const fr = document.getElementById("frictionPct");
+    if (!fr.value) fr.value = "10";
+    preparedOnEl.textContent = todayStamp();
+  })();
+
+  // ---------------- Comp rows ----------------
+  let rowCount = 6;
+
+  function makeRow(idx){
+    const tr = document.createElement("tr");
+
+    const tdIdx = document.createElement("td");
+    tdIdx.textContent = idx + 1;
+
+    const tdPrice = document.createElement("td");
+    const price = document.createElement("input");
+    price.type = "number";
+    price.inputMode = "decimal";
+    price.placeholder = "e.g., 65000";
+    price.className = "compPrice";
+    tdPrice.appendChild(price);
+
+    const tdSqft = document.createElement("td");
+    const sqft = document.createElement("input");
+    sqft.type = "number";
+    sqft.inputMode = "decimal";
+    sqft.placeholder = "e.g., 1200";
+    sqft.className = "compSqft";
+    tdSqft.appendChild(sqft);
+
+    const tdPpsf = document.createElement("td");
+    tdPpsf.className = "mono compPpsf";
+    tdPpsf.textContent = "—";
+
+    tr.appendChild(tdIdx);
+    tr.appendChild(tdPrice);
+    tr.appendChild(tdSqft);
+    tr.appendChild(tdPpsf);
+
+    price.addEventListener("input", recalc);
+    sqft.addEventListener("input", recalc);
+
+    return tr;
+  }
+
+  function seedRows(n){
+    compBody.innerHTML = "";
+    for (let i=0;i<n;i++) compBody.appendChild(makeRow(i));
+  }
+
+  seedRows(rowCount);
+
+  addRowBtn.addEventListener("click", () => {
+    rowCount += 1;
+    compBody.appendChild(makeRow(rowCount-1));
     recalc();
+  });
 
-    // Optional: register service worker if you have one
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+  resetBtn.addEventListener("click", () => {
+    ids.forEach(id => document.getElementById(id).value = "");
+    document.getElementById("frictionPct").value = "10";
+    document.getElementById("marketPriceType").value = "renovated";
+    rowCount = 6;
+    seedRows(rowCount);
+    preparedOnEl.textContent = todayStamp();
+    recalc();
+  });
+
+  // ---------------- Copy summary ----------------
+  copyBtn.addEventListener("click", async () => {
+    const summary = buildSummary();
+    try{
+      await navigator.clipboard.writeText(summary);
+      copyBtn.textContent = "Copied!";
+      setTimeout(()=> copyBtn.textContent = "Copy Summary", 900);
+    }catch{
+      const ta = document.createElement("textarea");
+      ta.value = summary;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      copyBtn.textContent = "Copied!";
+      setTimeout(()=> copyBtn.textContent = "Copy Summary", 900);
     }
-  </script>
+  });
+
+  // ---------------- State persistence ----------------
+  const STORAGE_KEY = "tmont_calc_v4_print_address";
+
+  function persistState(){
+    const state = {
+      deal: Object.fromEntries(ids.map(id => [id, document.getElementById(id).value])),
+      preparedOn: preparedOnEl.textContent || "",
+      comps: [...compBody.querySelectorAll("tr")].map(tr => {
+        const price = tr.querySelector(".compPrice")?.value || "";
+        const sqft  = tr.querySelector(".compSqft")?.value || "";
+        return { price, sqft };
+      })
+    };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const state = JSON.parse(raw);
+
+      if (state?.deal){
+        ids.forEach(id => {
+          if (typeof state.deal[id] !== "undefined" && state.deal[id] !== null){
+            document.getElementById(id).value = state.deal[id];
+          }
+        });
+      }
+
+      // enforce defaults if blank
+      const fr = document.getElementById("frictionPct");
+      if (!fr.value) fr.value = "10";
+      const mpt = document.getElementById("marketPriceType");
+      if (!mpt.value) mpt.value = "renovated";
+
+      if (state?.preparedOn){
+        preparedOnEl.textContent = state.preparedOn;
+      } else {
+        preparedOnEl.textContent = todayStamp();
+      }
+
+      if (Array.isArray(state?.comps) && state.comps.length){
+        rowCount = Math.max(6, state.comps.length);
+        seedRows(rowCount);
+        const rows = [...compBody.querySelectorAll("tr")];
+        state.comps.forEach((c, i) => {
+          const r = rows[i];
+          if (!r) return;
+          r.querySelector(".compPrice").value = c.price ?? "";
+          r.querySelector(".compSqft").value = c.sqft ?? "";
+        });
+      }
+    }catch{
+      preparedOnEl.textContent = todayStamp();
+    }
+  }
+
+  // ---------------- Main calc ----------------
+  function recalc(){
+    // Address => print field
+    const addr = (document.getElementById("propertyAddress").value || "").trim();
+    printAddressEl.textContent = addr || "—";
+
+    const arv = num(document.getElementById("arv").value);
+    const subjectSqft = num(document.getElementById("subjectSqft").value);
+    const fee = num(document.getElementById("wholesaleFee").value);
+    const rent = num(document.getElementById("monthlyRent").value);
+    const rehab = num(document.getElementById("rehab").value);
+    const closingHolding = num(document.getElementById("closingHolding").value);
+
+    // Market inputs
+    const contractPrice = num(document.getElementById("contractPrice").value);
+    const marketPrice = num(document.getElementById("marketPrice").value);
+    const marketPriceType = document.getElementById("marketPriceType").value || "renovated";
+
+    // friction default enforcement (write back to 10 if blank)
+    const frInput = document.getElementById("frictionPct");
+    if (frInput.value === "") frInput.value = "10";
+    const frictionPct = num(frInput.value);
+    const fr = Math.max(0, frictionPct) / 100;
+
+    const tier = getTier(arv);
+    const requiredComps = compsRequired(tier);
+
+    // comps
+    const prices = [...document.querySelectorAll(".compPrice")].map(i => num(i.value));
+    const sqfts  = [...document.querySelectorAll(".compSqft")].map(i => num(i.value));
+    const ppsfCells = [...document.querySelectorAll(".compPpsf")];
+
+    const ppsfs = [];
+    for (let i=0;i<prices.length;i++){
+      const p = prices[i], s = sqfts[i];
+      const v = (p > 0 && s > 0) ? (p / s) : 0;
+      if (v > 0) ppsfs.push(v);
+      ppsfCells[i].textContent = v > 0 ? `$${v.toFixed(2)}` : "—";
+    }
+
+    const avgPpsf = ppsfs.length ? (ppsfs.reduce((a,b)=>a+b,0) / ppsfs.length) : 0;
+    const investorValue = (avgPpsf>0 && subjectSqft>0) ? (avgPpsf * subjectSqft) : 0;
+
+    // Seller offer (this is what you offer the seller)
+    const ppsfOffer = Math.max(0, investorValue - fee);
+
+    // ✅ 1% anchors are based on BUYER ALL-IN = (Seller Offer + Fee + Rehab + Closing)
+    const onePctMaxAllIn = rent > 0 ? (rent * 100) : 0;
+
+    // Max seller offer so that Buyer All-In ≤ Rent×100
+    const holdMaxOffer = (rent > 0)
+      ? Math.max(0, (rent * 100) - fee - rehab - closingHolding)
+      : 0;
+
+    // Tier discipline
+    let finalOffer = ppsfOffer;
+    let finalNote = "Uses PPSF offer.";
+    if (tier === "B+"){
+      if (rent > 0){
+        finalOffer = Math.min(ppsfOffer, holdMaxOffer);
+        finalNote = "B+ discipline: priced to stricter exit (MIN of PPSF offer vs 1% hold cap).";
+      } else {
+        finalNote = "B+ needs rent for hold-cap discipline; using PPSF offer until rent is entered.";
+      }
+    }
+    if (tier === "C"){
+      if (rent > 0){
+        finalOffer = Math.min(ppsfOffer, holdMaxOffer);
+        finalNote = "Tier C discipline: hold-only; offer capped by 1% rule all-in.";
+      } else {
+        finalNote = "Tier C requires rent for 1% rule; enter rent to validate.";
+      }
+    }
+
+    // ✅ UPDATED: Buyer All-In includes Fee
+    const buyerAllIn = finalOffer + fee + rehab + closingHolding;
+    const onePctPass = (rent > 0) ? (buyerAllIn <= onePctMaxAllIn) : null;
+
+    // output pills
+    tierPill.textContent = `Tier: ${tier}`;
+    exitPill.textContent = `Exit: ${exitForTier(tier, onePctPass)}`;
+    ppsfpill.textContent = `Avg PPSF: ${avgPpsf>0 ? "$"+avgPpsf.toFixed(2) : "—"}`;
+
+    // output numbers
+    investorValueEl.textContent = money(investorValue);
+    ppsfOfferEl.textContent = money(ppsfOffer);
+    holdMaxOfferEl.textContent = rent>0 ? money(holdMaxOffer) : "$0";
+    finalOfferEl.textContent = money(finalOffer);
+    finalOfferNoteEl.textContent = finalNote;
+
+    // ✅ UPDATED outputs
+    allInEl.textContent = money(buyerAllIn);
+    onePctMaxEl.textContent = rent>0 ? money(onePctMaxAllIn) : "$0";
+
+    // comp requirement pills
+    compReqPill.textContent = `Required comps: ${requiredComps}`;
+    validCompPill.textContent = `Valid comps: ${ppsfs.length}`;
+
+    // comp check pill
+    if (ppsfs.length >= requiredComps){
+      compCheckPill.textContent = `Comps check: PASS (${ppsfs.length}/${requiredComps})`;
+      compCheckPill.className = "pill mono good";
+    } else {
+      compCheckPill.textContent = `Comps check: NEED ${requiredComps} (${ppsfs.length}/${requiredComps})`;
+      compCheckPill.className = "pill mono warn";
+    }
+
+    // tier check pill
+    if (tier === "—"){
+      tierCheckPill.textContent = "Tier check: Enter ARV";
+      tierCheckPill.className = "pill mono warn";
+    } else if (tier === "A"){
+      tierCheckPill.textContent = "Tier check: A (flip-only, 3 comps)";
+      tierCheckPill.className = "pill mono good";
+    } else if (tier === "B"){
+      tierCheckPill.textContent = "Tier check: B (flex, 6 comps)";
+      tierCheckPill.className = "pill mono good";
+    } else if (tier === "B+"){
+      tierCheckPill.textContent = "Tier check: B+ (bridge; strict pricing if rent entered)";
+      tierCheckPill.className = "pill mono good";
+    } else if (tier === "C"){
+      tierCheckPill.textContent = "Tier check: C (hold-only; 1% required)";
+      tierCheckPill.className = "pill mono good";
+    }
+
+    // 1% pill (now evaluated on Buyer All-In)
+    if (rent <= 0){
+      if (tier === "A" || tier === "B"){
+        onePctCheckPill.textContent = "1% check: optional (enter rent if desired)";
+        onePctCheckPill.className = "pill mono";
+      } else {
+        onePctCheckPill.textContent = "1% check: REQUIRED (enter rent)";
+        onePctCheckPill.className = "pill mono warn";
+      }
+    } else {
+      if (tier === "A"){
+        onePctCheckPill.textContent = "1% check: ignored (Tier A)";
+        onePctCheckPill.className = "pill mono";
+      } else if (tier === "B"){
+        onePctCheckPill.textContent = onePctPass ? "1% check: PASS (bonus)" : "1% check: FAIL (still ok if flip works)";
+        onePctCheckPill.className = onePctPass ? "pill mono good" : "pill mono warn";
+      } else if (tier === "B+"){
+        onePctCheckPill.textContent = onePctPass ? "1% check: PASS (hold allowed)" : "1% check: FAIL (flip-only pricing)";
+        onePctCheckPill.className = onePctPass ? "pill mono good" : "pill mono warn";
+      } else if (tier === "C"){
+        onePctCheckPill.textContent = onePctPass ? "1% check: PASS (required)" : "1% check: FAIL (reject/reprice)";
+        onePctCheckPill.className = onePctPass ? "pill mono good" : "pill mono bad";
+      }
+    }
+
+    // ---------------- Market Spread Validation ----------------
+    const threshold = contractPrice > 0 ? Math.max(10000, contractPrice * 0.03) : 10000;
+    thresholdPill.textContent = `Threshold: ${money(threshold)}`;
+    thresholdPill.className = "pill mono";
+
+    const subtractRehab = (marketPriceType === "renovated");
+    const nmv = (marketPrice > 0)
+      ? (marketPrice - (marketPrice * fr) - fee - (subtractRehab ? rehab : 0))
+      : 0;
+
+    nmvEl.textContent = marketPrice > 0 ? money(nmv) : "$0";
+    nmvNoteEl.textContent = subtractRehab
+      ? "NMV = Market − (Market×Friction%) − Fee − Rehab (Renovated mode)"
+      : "NMV = Market − (Market×Friction%) − Fee (As-Is mode)";
+
+    if (contractPrice > 0 && marketPrice > 0){
+      const spread = nmv - contractPrice;
+
+      marketSpreadPill.textContent = `Spread: ${money(spread)}`;
+      contractVsNmvEl.textContent = `${money(contractPrice)} vs ${money(nmv)}`;
+
+      if (spread >= threshold){
+        marketCheckPill.textContent = "Market check: PASS";
+        marketCheckPill.className = "pill mono good";
+        marketSpreadPill.className = "pill mono good";
+        contractVsNmvNoteEl.textContent = "PASS: strong cushion versus net market value after friction (+ rehab if renovated) + fee.";
+      } else if (spread <= -threshold){
+        marketCheckPill.textContent = "Market check: FAIL";
+        marketCheckPill.className = "pill mono bad";
+        marketSpreadPill.className = "pill mono bad";
+        contractVsNmvNoteEl.textContent = "FAIL: contract is meaningfully above NMV (reprice, verify market price type, or confirm rehab/friction).";
+      } else {
+        marketCheckPill.textContent = "Market check: BORDERLINE";
+        marketCheckPill.className = "pill mono warn";
+        marketSpreadPill.className = "pill mono warn";
+        contractVsNmvNoteEl.textContent = "BORDERLINE: close to NMV. Verify rehab scope, confirm market-clearing comps, or tighten fee/price.";
+      }
+    } else {
+      marketCheckPill.textContent = "Market check: enter contract + market price";
+      marketCheckPill.className = "pill mono";
+      marketSpreadPill.textContent = "Spread: —";
+      marketSpreadPill.className = "pill mono";
+      contractVsNmvEl.textContent = "$0";
+      contractVsNmvNoteEl.textContent = "Enter Contract Price + Market Price to run the NMV check.";
+    }
+
+    persistState();
+  }
+
+  function buildSummary(){
+    const get = (id) => document.getElementById(id).value;
+
+    const propertyAddress = (get("propertyAddress") || "").trim();
+    const preparedOn = preparedOnEl.textContent || todayStamp();
+
+    const arv = num(get("arv"));
+    const subjectSqft = num(get("subjectSqft"));
+    const fee = num(get("wholesaleFee"));
+    const rent = num(get("monthlyRent"));
+    const rehab = num(get("rehab"));
+    const closingHolding = num(get("closingHolding"));
+
+    const contractPrice = num(get("contractPrice"));
+    const marketPrice = num(get("marketPrice"));
+    const marketPriceType = (get("marketPriceType") || "renovated");
+    const marketNotes = get("marketNotes") || "";
+
+    const frRaw = get("frictionPct");
+    const frictionPct = frRaw === "" ? 10 : num(frRaw);
+    const fr = Math.max(0, frictionPct)/100;
+
+    // comps
+    const prices = [...document.querySelectorAll(".compPrice")].map(i => num(i.value));
+    const sqfts  = [...document.querySelectorAll(".compSqft")].map(i => num(i.value));
+    const ppsfs = [];
+    for (let i=0;i<prices.length;i++){
+      const p=prices[i], s=sqfts[i];
+      const v=(p>0 && s>0) ? (p/s) : 0;
+      if (v>0) ppsfs.push(v);
+    }
+
+    const avgPpsf = ppsfs.length ? (ppsfs.reduce((a,b)=>a+b,0)/ppsfs.length) : 0;
+    const investorValue = (avgPpsf>0 && subjectSqft>0) ? (avgPpsf*subjectSqft) : 0;
+
+    // Seller offer
+    const ppsfOffer = Math.max(0, investorValue - fee);
+
+    const tier = getTier(arv);
+
+    // ✅ Buyer all-in max (rent×100)
+    const onePctMaxAllIn = rent>0 ? (rent*100) : 0;
+
+    // Max seller offer so buyer all-in stays <= rent×100
+    const holdMaxOffer = (rent>0) ? Math.max(0, (rent*100) - fee - rehab - closingHolding) : 0;
+
+    let finalOffer = ppsfOffer;
+    if ((tier === "B+" || tier === "C") && rent>0){
+      finalOffer = Math.min(ppsfOffer, holdMaxOffer);
+    }
+
+    // ✅ Buyer All-In includes fee
+    const buyerAllIn = finalOffer + fee + rehab + closingHolding;
+    const onePctPass = (rent>0) ? (buyerAllIn <= onePctMaxAllIn) : null;
+
+    const threshold = contractPrice > 0 ? Math.max(10000, contractPrice * 0.03) : 10000;
+    const subtractRehab = (marketPriceType === "renovated");
+    const nmv = (marketPrice>0) ? (marketPrice - (marketPrice*fr) - fee - (subtractRehab ? rehab : 0)) : 0;
+    const spread = (contractPrice>0 && marketPrice>0) ? (nmv - contractPrice) : null;
+
+    let marketRating = "—";
+    if (spread !== null){
+      if (spread >= threshold) marketRating = "PASS";
+      else if (spread <= -threshold) marketRating = "FAIL";
+      else marketRating = "BORDERLINE";
+    }
+
+    return [
+      "Tony Mont Purchase Price Calculator Summary",
+      "------------------------------------------",
+      `Property: ${propertyAddress || "—"}`,
+      `Prepared On: ${preparedOn}`,
+      "",
+      `Tier: ${tier} (ARV-only)`,
+      `ARV: ${money(arv)}`,
+      `Subject Sq Ft: ${subjectSqft || 0}`,
+      `Avg Investor PPSF: ${avgPpsf ? "$"+avgPpsf.toFixed(2) : "—"} (Valid comps: ${ppsfs.length})`,
+      `Investor Value: ${money(investorValue)}`,
+      `Wholesale Fee: ${money(fee)}`,
+      `PPSF Offer (Seller): ${money(ppsfOffer)}`,
+      `Monthly Rent: ${rent ? money(rent) : "—"}`,
+      `Rehab: ${money(rehab)} | Closing/Holding: ${money(closingHolding)}`,
+      `Hold Max Offer (Seller cap): ${rent ? money(holdMaxOffer) : "—"}  [Rent×100 − Fee − Rehab − Closing]`,
+      `Final Offer (Seller): ${money(finalOffer)}`,
+      `Buyer All-In: ${money(buyerAllIn)}  [Seller + Fee + Rehab + Closing]`,
+      `1% Max All-In (Rent×100): ${rent ? money(onePctMaxAllIn) : "—"}`,
+      `1% Pass (Buyer All-In): ${rent ? (onePctPass ? "YES" : "NO") : "—"}`,
+      "",
+      "Market Spread Validation (Optional)",
+      `Contract Price: ${contractPrice ? money(contractPrice) : "—"}`,
+      `Market Price: ${marketPrice ? money(marketPrice) : "—"}`,
+      `Market Price Type: ${marketPriceType === "renovated" ? "Renovated (subtract rehab)" : "As-Is (no rehab subtraction)"}`,
+      `Round-trip Friction %: ${frRaw === "" ? "10" : frictionPct} %`,
+      `Threshold: ${money(threshold)} (AUTO: max($10k, 3% of contract))`,
+      `NMV: ${marketPrice ? money(nmv) : "—"}`,
+      `Spread (NMV - Contract): ${spread === null ? "—" : money(spread)} (${marketRating})`,
+      marketNotes ? `Notes: ${marketNotes}` : ""
+    ].filter(Boolean).join("\n");
+  }
+
+  loadState();
+  recalc();
+</script>
 </body>
 </html>
