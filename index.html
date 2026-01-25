@@ -1,464 +1,723 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#0b0f14">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Multifamily Deal Checklist + Value-Add Calculator</title>
+  <title>MBPS Deal Analyzer (ARV Tier + 1% Rule on Buyer All-In)</title>
+
+  <!-- PWA (optional / safe if you already have icons) -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b0f14" />
+
   <style>
     :root{
-      --bg:#0b0f14; --card:#121826; --muted:#93a4b8; --text:#e7eef8; --line:#223044;
-      --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+      --bg:#0b0f14;
+      --card:#0f1623;
+      --card2:#0c1320;
+      --text:#e7edf7;
+      --muted:#9fb0c8;
+      --line:#1d2a40;
+      --good:#2dd4bf;
+      --warn:#fbbf24;
+      --bad:#fb7185;
+      --accent:#60a5fa;
+      --shadow: 0 14px 40px rgba(0,0,0,.35);
+      --radius: 18px;
     }
-    *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    body{margin:0;background:var(--bg);color:var(--text);padding:16px}
-    h1{font-size:18px;margin:0 0 12px}
-    .grid{display:grid;grid-template-columns:1.35fr .85fr;gap:12px;max-width:1200px;margin:0 auto}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
-    .row{display:grid;grid-template-columns:1.25fr .75fr;gap:10px;align-items:center;margin:8px 0}
-    label{color:var(--muted);font-size:12px}
-    input,select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0e1420;color:var(--text)}
-    .section-title{font-weight:900;font-size:13px;margin:10px 0 6px;color:#cfe0ff}
-    .hr{height:1px;background:var(--line);margin:10px 0}
-    .kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .pill{padding:10px;border:1px solid var(--line);border-radius:12px;background:#0e1420}
-    .pill .t{font-size:12px;color:var(--muted)}
-    .pill .v{font-weight:900;font-size:16px}
-    .right .card{position:sticky;top:12px}
-    .subcard{background:#0e1420;border:1px solid var(--line);border-radius:12px;padding:10px}
-    .badge{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px}
-    .good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
-    .small{font-size:12px;color:var(--muted);line-height:1.4}
-    @media (max-width: 980px){ .grid{grid-template-columns:1fr} .right .card{position:static} }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1100px 700px at 10% 0%, rgba(96,165,250,.20), transparent 60%),
+        radial-gradient(900px 600px at 100% 10%, rgba(45,212,191,.16), transparent 55%),
+        radial-gradient(1000px 700px at 30% 100%, rgba(251,113,133,.10), transparent 55%),
+        var(--bg);
+    }
+    .wrap{max-width:1150px;margin:0 auto;padding:24px}
+    header{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+      margin-bottom:18px;
+    }
+    .title h1{margin:0;font-size:22px;letter-spacing:.2px}
+    .title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+    .pillbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .pill{
+      border:1px solid var(--line);
+      background:rgba(15,22,35,.65);
+      padding:10px 12px;border-radius:999px;
+      color:var(--muted);
+      font-size:12px;
+      box-shadow:0 8px 22px rgba(0,0,0,.18);
+      backdrop-filter: blur(6px);
+      display:flex;gap:8px;align-items:center;
+      white-space:nowrap;
+    }
+    .pill b{color:var(--text);font-weight:700}
+    .grid{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:16px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+      header{flex-direction:column}
+      .pillbar{justify-content:flex-start}
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(15,22,35,.92), rgba(12,19,32,.92));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:16px 16px 10px;
+      border-bottom:1px solid rgba(29,42,64,.65);
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .card .hd h2{margin:0;font-size:14px;letter-spacing:.25px}
+    .card .hd .sub{color:var(--muted);font-size:12px}
+    .card .bd{padding:16px}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 560px){ .two{grid-template-columns:1fr} }
+    label{display:block;margin:0 0 6px;color:var(--muted);font-size:12px}
+    input,select{
+      width:100%;
+      padding:11px 12px;
+      background:rgba(11,15,20,.75);
+      border:1px solid rgba(29,42,64,.85);
+      border-radius:12px;
+      color:var(--text);
+      outline:none;
+    }
+    input:focus,select:focus{border-color:rgba(96,165,250,.8);box-shadow:0 0 0 3px rgba(96,165,250,.15)}
+    .row{margin-bottom:12px}
+    .btnbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    button{
+      border:1px solid rgba(29,42,64,.95);
+      background:rgba(15,22,35,.85);
+      color:var(--text);
+      padding:10px 12px;border-radius:12px;
+      cursor:pointer;
+    }
+    button.primary{
+      background:linear-gradient(180deg, rgba(96,165,250,.95), rgba(59,130,246,.85));
+      border-color:rgba(96,165,250,.95);
+      color:#06101f;
+      font-weight:800;
+    }
+    button.ghost{
+      background:transparent;
+      color:var(--muted);
+    }
+    button:hover{filter:brightness(1.06)}
+    .note{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    .results{
+      display:grid;gap:12px;
+    }
+    .kpi{
+      background:linear-gradient(180deg, rgba(15,22,35,.70), rgba(12,19,32,.70));
+      border:1px solid rgba(29,42,64,.85);
+      border-radius:16px;
+      padding:14px;
+    }
+    .kpi .top{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+      margin-bottom:8px;
+    }
+    .kpi .top .lbl{color:var(--muted);font-size:12px}
+    .kpi .top .val{font-size:20px;font-weight:900;letter-spacing:.2px}
+    .kpi .meta{display:flex;flex-wrap:wrap;gap:8px}
+    .tag{
+      font-size:12px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(29,42,64,.95);
+      background:rgba(11,15,20,.55);
+      color:var(--muted);
+    }
+    .tag.good{border-color:rgba(45,212,191,.55);color:rgba(45,212,191,.95)}
+    .tag.warn{border-color:rgba(251,191,36,.55);color:rgba(251,191,36,.95)}
+    .tag.bad{border-color:rgba(251,113,133,.55);color:rgba(251,113,133,.95)}
+    .line{
+      height:1px;background:rgba(29,42,64,.7);margin:10px 0;
+    }
+    .mini{
+      display:grid;gap:8px;
+      font-size:12px;color:var(--muted);
+    }
+    .mini div{display:flex;justify-content:space-between;gap:10px}
+    .mini b{color:var(--text)}
+    .toggle{
+      display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+    }
+    .seg{
+      display:flex;
+      background:rgba(11,15,20,.55);
+      border:1px solid rgba(29,42,64,.9);
+      border-radius:999px;
+      overflow:hidden;
+    }
+    .seg button{
+      border:none;border-right:1px solid rgba(29,42,64,.8);
+      border-radius:0;margin:0;
+      padding:8px 10px;font-size:12px;color:var(--muted);
+      background:transparent;
+    }
+    .seg button:last-child{border-right:none}
+    .seg button.active{
+      background:rgba(96,165,250,.18);
+      color:var(--text);
+      font-weight:800;
+    }
+    .warnbox{
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px dashed rgba(251,191,36,.55);
+      background:rgba(251,191,36,.08);
+      color:rgba(251,191,36,.95);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .badbox{
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px dashed rgba(251,113,133,.55);
+      background:rgba(251,113,133,.08);
+      color:rgba(251,113,133,.95);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .goodbox{
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px dashed rgba(45,212,191,.55);
+      background:rgba(45,212,191,.08);
+      color:rgba(45,212,191,.95);
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    /* Print */
+    @media print{
+      body{background:#fff;color:#000}
+      .wrap{max-width:900px;padding:0}
+      header .pillbar, .btnbar, .note, .seg, .title p{display:none !important}
+      .card, .kpi{box-shadow:none !important}
+      .card{border:1px solid #ddd}
+      .kpi{border:1px solid #ddd}
+      input,select{border:1px solid #ccc;background:#fff;color:#000}
+      .tag{border:1px solid #bbb;color:#000;background:#fff}
+      .tag.good,.tag.warn,.tag.bad{border-color:#bbb;color:#000}
+      .warnbox,.badbox,.goodbox{border:1px solid #bbb;background:#fff;color:#000}
+    }
   </style>
 </head>
-<script>
-  // Register Service Worker
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", async () => {
-      try {
-        await navigator.serviceWorker.register("./service-worker.js");
-      } catch (e) {
-        console.warn("SW registration failed", e);
-      }
-    });
-  }
 
-  // Optional: Install prompt button (Android/Chrome)
-  let deferredPrompt = null;
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "inline-flex";
-  });
-
-  async function installApp() {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
-  }
-</script>
-  
 <body>
-  <button id="installBtn" onclick="installApp()" style="display:none; margin:0 0 12px; padding:10px 12px; border-radius:12px; border:1px solid #223044; background:#0e1420; color:#e7eef8; font-weight:700;">
-  Install App
-</button>
-  <h1>Multifamily Deal Checklist & Key Metrics (Value-Add + Debt + Returns)</h1>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>MBPS Deal Analyzer</h1>
+        <p>
+          <b>ARV only determines tier.</b>
+          <b>1% rule is based on Buyer All-In</b> = (Seller Price + Wholesale Fee + Rehab + Closing).
+          Includes print + address, market spread validation, and localStorage persistence.
+        </p>
+      </div>
 
-  <div class="grid">
-    <!-- LEFT -->
-    <div class="left">
+      <div class="pillbar">
+        <div class="pill">Tier Multiplier: <b id="pillTierMult">—</b></div>
+        <div class="pill">Tier: <b id="pillTier">—</b></div>
+        <div class="pill">Buyer All-In: <b id="pillAllIn">—</b></div>
+        <div class="pill">1% Rule: <b id="pillOnePct">—</b></div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- INPUTS -->
       <div class="card">
-
-        <div class="section-title">Property</div>
-        <div class="row"><label>Property Name</label><input id="propName" placeholder="e.g., October Apartments"></div>
-        <div class="row"><label>Property Address</label><input id="propAddr" placeholder="Street, City, State"></div>
-
-        <div class="hr"></div>
-
-        <div class="section-title">Basic Inputs</div>
-        <div class="row"><label># of Units</label><input id="units" type="number" value="11" min="1" step="1"/></div>
-        <div class="row"><label>Purchase Price</label><input id="purchasePrice" type="number" value="1500000" step="1000"/></div>
-
-        <div class="hr"></div>
-
-        <div class="section-title">NOI Mode (Choose 1 or 2)</div>
-        <div class="row">
-          <label>NOI Input Mode</label>
-          <select id="noiMode">
-            <option value="quick">1) Quick Underwrite (calc in-place NOI from rents)</option>
-            <option value="t12">2) T-12 Actual NOI (manual in-place NOI)</option>
-          </select>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="section-title">Rents (Value-Add)</div>
-        <div class="row"><label>Current Avg Rent (per unit / month)</label><input id="currentRent" type="number" value="1350" step="25"/></div>
-
-        <div class="row">
-          <label>Post-Upgrade Rent Input Mode</label>
-          <select id="rentMode">
-            <option value="increase">Enter Rent Increase ($/unit/mo)</option>
-            <option value="target">Enter Target Market Rent ($/unit/mo)</option>
-          </select>
-        </div>
-
-        <div class="row" id="rowIncrease">
-          <label>Rent Increase After Upgrades (per unit / month)</label>
-          <input id="rentIncrease" type="number" value="300" step="25"/>
-        </div>
-
-        <div class="row" id="rowTarget" style="display:none">
-          <label>Target Market Rent (per unit / month)</label>
-          <input id="targetRent" type="number" value="1650" step="25"/>
-        </div>
-
-        <div class="row"><label>Other Income (per month, total)</label><input id="otherIncomeMonthly" type="number" value="0" step="50"/></div>
-
-        <!-- QUICK NOI -->
-        <div id="quickNOIInputs">
-          <div class="row"><label>Vacancy %</label><input id="vacancyPct" type="number" value="5" step="0.25"/></div>
-          <div class="row"><label>Expense Ratio % (of EGI)</label><input id="expensePct" type="number" value="40" step="0.25"/></div>
-        </div>
-
-        <!-- T12 NOI -->
-        <div id="t12NOIInputs" style="display:none">
-          <div class="row">
-            <label>In-Place NOI (Annual) — Manual</label>
-            <input id="inPlaceNOIAnnual" type="number" value="106653" step="1000"/>
+        <div class="hd">
+          <div>
+            <h2>Deal Inputs</h2>
+            <div class="sub">Enter what you know. Everything auto-calculates.</div>
           </div>
-          <div class="row"><label>Vacancy % (for stabilized)</label><input id="vacancyPctT12" type="number" value="5" step="0.25"/></div>
-          <div class="row"><label>Expense Ratio % (of EGI, for stabilized)</label><input id="expensePctT12" type="number" value="40" step="0.25"/></div>
+          <div class="toggle">
+            <span class="sub">Spread compare:</span>
+            <div class="seg" role="tablist" aria-label="Market compare mode">
+              <button id="btnCompareRenovated" type="button" class="active">Renovated (ARV)</button>
+              <button id="btnCompareAsIs" type="button">As-Is Value</button>
+            </div>
+          </div>
         </div>
 
-        <div class="hr"></div>
+        <div class="bd">
+          <div class="row">
+            <label for="address">Property Address (prints on results)</label>
+            <input id="address" type="text" placeholder="123 Main St, City, ST 12345" />
+          </div>
 
-        <div class="section-title">Debt</div>
-        <div class="row"><label>LTV %</label><input id="ltvPct" type="number" value="70" step="0.5"/></div>
-        <div class="row"><label>Interest Rate %</label><input id="ratePct" type="number" value="6.00" step="0.05"/></div>
-        <div class="row"><label>Amortization (years)</label><input id="amortYears" type="number" value="30" step="1"/></div>
-        <div class="row"><label>Hold Period (years)</label><input id="holdYears" type="number" value="5" step="1"/></div>
-        <div class="row">
-          <label>Returns Use Debt Service</label>
-          <select id="returnDebtMode">
-            <option value="pi">P&I</option>
-            <option value="io">Interest-Only</option>
-          </select>
-        </div>
+          <div class="two">
+            <div class="row">
+              <label for="arv">ARV (After Repair Value)</label>
+              <input id="arv" type="number" inputmode="decimal" placeholder="250000" />
+            </div>
+            <div class="row">
+              <label for="rent">Estimated Monthly Rent</label>
+              <input id="rent" type="number" inputmode="decimal" placeholder="1400" />
+            </div>
+          </div>
 
-        <div class="hr"></div>
+          <div class="two">
+            <div class="row">
+              <label for="sellerPrice">Seller Price (Contract Price)</label>
+              <input id="sellerPrice" type="number" inputmode="decimal" placeholder="38000" />
+            </div>
+            <div class="row">
+              <label for="wholesaleFee">Wholesale Fee</label>
+              <input id="wholesaleFee" type="number" inputmode="decimal" placeholder="12000" />
+            </div>
+          </div>
 
-        <div class="section-title">Exit / Sale</div>
-        <div class="row"><label>Exit Cap Rate %</label><input id="exitCapPct" type="number" value="6.00" step="0.01"/></div>
-        <div class="row"><label>Sale Costs % (broker + closing)</label><input id="saleCostPct" type="number" value="4.0" step="0.25"/></div>
+          <div class="two">
+            <div class="row">
+              <label for="rehab">Rehab (Repairs)</label>
+              <input id="rehab" type="number" inputmode="decimal" placeholder="45000" />
+            </div>
+            <div class="row">
+              <label for="closing">Closing Costs (Buyer side)</label>
+              <input id="closing" type="number" inputmode="decimal" placeholder="5000" />
+            </div>
+          </div>
 
-        <div class="hr"></div>
+          <div class="two">
+            <div class="row">
+              <label for="asIsValue">As-Is Market Value (only used if Compare=As-Is)</label>
+              <input id="asIsValue" type="number" inputmode="decimal" placeholder="90000" />
+            </div>
+            <div class="row">
+              <label for="customTier">Tier Override (optional)</label>
+              <select id="customTier">
+                <option value="">Auto (based on ARV)</option>
+                <option value="0.70">0.70</option>
+                <option value="0.72">0.72</option>
+                <option value="0.75">0.75</option>
+                <option value="0.78">0.78</option>
+                <option value="0.80">0.80</option>
+              </select>
+            </div>
+          </div>
 
-        <div class="section-title">Equity</div>
-        <div class="row"><label>Upgrade Budget / Additional Equity (CapEx)</label><input id="capex" type="number" value="200000" step="1000"/></div>
+          <div class="line"></div>
 
-        <div class="hr"></div>
+          <div class="two">
+            <div class="row">
+              <label for="minSpreadPct">Min Spread % (validation threshold)</label>
+              <input id="minSpreadPct" type="number" inputmode="decimal" placeholder="15" />
+            </div>
+            <div class="row">
+              <label for="minSpreadDollars">Min Spread $ (validation threshold)</label>
+              <input id="minSpreadDollars" type="number" inputmode="decimal" placeholder="15000" />
+            </div>
+          </div>
 
-        <div class="section-title">Core Outputs</div>
-        <div class="kpi">
-          <div class="pill"><div class="t">Price / Unit</div><div class="v" id="outPricePerUnit">$0</div></div>
-          <div class="pill"><div class="t">Loan Amount</div><div class="v" id="outLoan">$0</div></div>
+          <div class="btnbar">
+            <button class="primary" type="button" id="btnPrint">Print Results</button>
+            <button class="ghost" type="button" id="btnReset">Reset</button>
+          </div>
 
-          <div class="pill"><div class="t">Post-Upgrade Rent (avg)</div><div class="v" id="outPostRent">$0</div></div>
-          <div class="pill"><div class="t">Monthly Rent Lift (Total)</div><div class="v" id="outMonthlyLift">$0</div></div>
-
-          <div class="pill"><div class="t">In-Place NOI (annual)</div><div class="v" id="outNOIInPlace">$0</div></div>
-          <div class="pill"><div class="t">Stabilized NOI (annual)</div><div class="v" id="outNOIStabilized">$0</div></div>
-
-          <div class="pill"><div class="t">NOI Increase ($)</div><div class="v" id="outNOIInc">$0</div></div>
-          <div class="pill"><div class="t">NOI Growth (%)</div><div class="v" id="outNOIGrowth">—</div></div>
-
-          <div class="pill"><div class="t">Projected Value (Exit Cap)</div><div class="v" id="outProjValue">$0</div></div>
-          <div class="pill"><div class="t">Value Increase (Δ Value)</div><div class="v" id="outValueInc">$0</div></div>
-
-          <div class="pill"><div class="t">Net Proceeds (at sale)</div><div class="v" id="outNetProceeds">$0</div></div>
-          <div class="pill"><div class="t">Equity Multiple</div><div class="v" id="outEquityMultiple">—</div></div>
-
-          <div class="pill"><div class="t">Avg Annual Return (CAGR)</div><div class="v" id="outAvgAnnual">—</div></div>
-          <div class="pill"><div class="t">Avg Annual Cash Flow</div><div class="v" id="outCashFlow">$0</div></div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="small">
-          <b>Definitions:</b><br/>
-          NOI = (Gross Rent + Other Income − Vacancy) − Expenses (expense ratio applied to EGI).<br/>
-          Projected Value = Stabilized NOI ÷ Exit Cap.<br/>
-          Net Proceeds = Projected Value − Sale Costs − Remaining Loan Balance (amortized).<br/>
-          Equity Multiple = (Net Proceeds + cumulative cash flow) ÷ Total Equity (Equity + CapEx).<br/>
-          Avg Annual Return uses CAGR: (EquityMultiple)^(1/holdYears) − 1.
+          <div class="note">
+            Notes:
+            <ul>
+              <li><b>Buyer All-In</b> = Seller Price + Wholesale Fee + Rehab + Closing</li>
+              <li><b>1% Rule</b> uses Buyer All-In (not seller price)</li>
+              <li><b>Tier</b> is determined by ARV only (unless overridden)</li>
+              <li><b>Market Spread</b> compares Buyer All-In to Renovated (ARV) or As-Is value (toggle)</li>
+            </ul>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- RIGHT DASH -->
-    <div class="right">
-      <div class="card">
-        <div class="section-title">Deal Checklist & Key Metrics</div>
-
-        <div class="subcard">
-          <div class="section-title">Debt</div>
-          <div class="row"><label>DSCR (P&I)</label><div id="outDSCR_PI" class="badge">—</div></div>
-          <div class="row"><label>DSCR (IO)</label><div id="outDSCR_IO" class="badge">—</div></div>
-          <div class="row"><label>Debt Service (P&I / yr)</label><div id="outDebtPI" class="badge">—</div></div>
-          <div class="row"><label>Debt Service (IO / yr)</label><div id="outDebtIO" class="badge">—</div></div>
-          <div class="row"><label>Leverage (LTV)</label><div id="outLTV" class="badge">—</div></div>
-          <div class="row"><label>Interest Rate</label><div id="outRate" class="badge">—</div></div>
+      <!-- RESULTS -->
+      <div class="results">
+        <div class="kpi">
+          <div class="top">
+            <div>
+              <div class="lbl">Property</div>
+              <div class="val" id="outAddress">—</div>
+            </div>
+          </div>
+          <div class="mini">
+            <div><span>ARV</span><b id="outARV">—</b></div>
+            <div><span>Rent</span><b id="outRent">—</b></div>
+          </div>
         </div>
 
-        <div style="height:10px"></div>
-
-        <div class="subcard">
-          <div class="section-title">NOI Growth</div>
-          <div class="row"><label>Takeover NOI</label><div id="outNOITakeover" class="badge">—</div></div>
-          <div class="row"><label>Market NOI</label><div id="outNOIMarket" class="badge">—</div></div>
-          <div class="row"><label>Growth</label><div id="outNOIGrowthBadge" class="badge">—</div></div>
+        <div class="kpi">
+          <div class="top">
+            <div>
+              <div class="lbl">Buyer All-In (for 1% rule)</div>
+              <div class="val" id="outAllIn">—</div>
+            </div>
+          </div>
+          <div class="meta">
+            <span class="tag" id="tagAllInBreak">Seller + Fee + Rehab + Closing</span>
+            <span class="tag" id="tagOnePct">1% Rule: —</span>
+          </div>
+          <div class="line"></div>
+          <div class="mini">
+            <div><span>Seller Price</span><b id="outSeller">—</b></div>
+            <div><span>Wholesale Fee</span><b id="outFee">—</b></div>
+            <div><span>Rehab</span><b id="outRehab">—</b></div>
+            <div><span>Closing</span><b id="outClosing">—</b></div>
+          </div>
         </div>
 
-        <div style="height:10px"></div>
-
-        <div class="subcard">
-          <div class="section-title">Exit</div>
-          <div class="row"><label>Projected Value</label><div id="outProjValueBadge" class="badge">—</div></div>
-          <div class="row"><label>Sale Costs</label><div id="outSaleCosts" class="badge">—</div></div>
-          <div class="row"><label>Loan Bal @ Sale</label><div id="outBalAtSale" class="badge">—</div></div>
-          <div class="row"><label>Net Proceeds</label><div id="outNetProceedsBadge" class="badge">—</div></div>
+        <div class="kpi">
+          <div class="top">
+            <div>
+              <div class="lbl">Tier + Suggested Max Seller Price</div>
+              <div class="val" id="outMaxSeller">—</div>
+            </div>
+          </div>
+          <div class="meta">
+            <span class="tag" id="tagTier">Tier: —</span>
+            <span class="tag" id="tagMult">Multiplier: —</span>
+          </div>
+          <div class="line"></div>
+          <div class="mini">
+            <div><span>Formula</span><b id="outTierFormula">—</b></div>
+            <div><span>Max All-In Allowed (Tier)</span><b id="outMaxAllInAllowed">—</b></div>
+          </div>
         </div>
 
-        <div style="height:10px"></div>
-
-        <div class="subcard">
-          <div class="section-title">Investor Returns</div>
-          <div class="row"><label>Total Equity In</label><div id="outTotalEquity" class="badge">—</div></div>
-          <div class="row"><label>Equity Multiple</label><div id="outEquityMultipleBadge" class="badge">—</div></div>
-          <div class="row"><label>Avg Annual Return</label><div id="outAvgAnnualBadge" class="badge">—</div></div>
+        <div class="kpi">
+          <div class="top">
+            <div>
+              <div class="lbl">Market Spread Validation</div>
+              <div class="val" id="outSpread">—</div>
+            </div>
+          </div>
+          <div class="meta">
+            <span class="tag" id="tagSpreadPct">Spread %: —</span>
+            <span class="tag" id="tagCompareMode">Compare: —</span>
+          </div>
+          <div class="line"></div>
+          <div id="validationBox" class="warnbox">
+            Enter ARV (and As-Is value if using As-Is compare) to validate spread.
+          </div>
+          <div class="line"></div>
+          <div class="mini">
+            <div><span>Selected Market Value</span><b id="outMarketValue">—</b></div>
+            <div><span>Min Spread %</span><b id="outMinSpreadPct">—</b></div>
+            <div><span>Min Spread $</span><b id="outMinSpreadDollars">—</b></div>
+          </div>
         </div>
 
-        <div class="hr"></div>
-        <div class="section-title">Verdict</div>
-        <div class="small" id="outVerdict">—</div>
       </div>
     </div>
   </div>
 
-<script>
-  const $ = (id) => document.getElementById(id);
+  <script>
+    // ----------------------------
+    // Helpers
+    // ----------------------------
+    const $ = (id) => document.getElementById(id);
+    const fmtMoney = (n) => {
+      const x = Number(n);
+      if (!isFinite(x)) return "—";
+      return x.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+    };
+    const fmtPct = (n) => {
+      const x = Number(n);
+      if (!isFinite(x)) return "—";
+      return (x * 100).toFixed(1) + "%";
+    };
+    const clamp0 = (n) => (isFinite(n) ? Math.max(0, n) : 0);
+    const num = (v) => {
+      const x = Number(String(v ?? "").trim());
+      return isFinite(x) ? x : 0;
+    };
 
-  const fmtMoney0 = (n) => isFinite(n) ? n.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0}) : "—";
-  const fmtMoney2 = (n) => isFinite(n) ? n.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:2}) : "—";
-  const fmtPct2   = (n) => isFinite(n) ? (n*100).toFixed(2) + "%" : "—";
-  const fmtNum2   = (n) => isFinite(n) ? n.toFixed(2) : "—";
-
-  function badge(el, text, tone){
-    el.textContent = text;
-    el.className = "badge" + (tone ? (" " + tone) : "");
-  }
-
-  function calcNOI(units, rentPerUnit, otherIncomeMonthly, vacancyPct, expensePct){
-    const gprAnnual = units * rentPerUnit * 12;
-    const otherAnnual = otherIncomeMonthly * 12;
-    const gross = gprAnnual + otherAnnual;
-    const egi = gross * (1 - vacancyPct);
-    const expenses = egi * expensePct;
-    const noi = egi - expenses;
-    return {noi, gross, egi, expenses};
-  }
-
-  function pmt(rateAnnual, years, principal){
-    const r = rateAnnual/12;
-    const n = years*12;
-    if (!isFinite(principal) || principal <= 0) return 0;
-    if (r === 0) return principal/n;
-    return (r * principal) / (1 - Math.pow(1+r, -n));
-  }
-
-  function balanceAfterYears(rateAnnual, amortYears, principal, yearsHeld){
-    const r = rateAnnual/12;
-    const n = amortYears*12;
-    const k = Math.min(Math.max(0, yearsHeld*12), n);
-    if (!isFinite(principal) || principal <= 0) return 0;
-    const payment = pmt(rateAnnual, amortYears, principal);
-    if (r === 0) return principal * (1 - k/n);
-    return principal * Math.pow(1+r, k) - payment * ((Math.pow(1+r,k)-1)/r);
-  }
-
-  function syncUI(){
-    const noiMode = $("noiMode").value;
-    $("quickNOIInputs").style.display = (noiMode === "quick") ? "block" : "none";
-    $("t12NOIInputs").style.display   = (noiMode === "t12") ? "block" : "none";
-
-    const rentMode = $("rentMode").value;
-    $("rowIncrease").style.display = rentMode === "increase" ? "grid" : "none";
-    $("rowTarget").style.display   = rentMode === "target"   ? "grid" : "none";
-  }
-
-  function recalc(){
-    // Basics
-    const units = Math.max(1, Number($("units").value||0));
-    const purchase = Number($("purchasePrice").value||0);
-
-    // Rent
-    const currentRent = Number($("currentRent").value||0);
-    const otherIncomeMonthly = Number($("otherIncomeMonthly").value||0);
-
-    const rentMode = $("rentMode").value;
-    const rentIncrease = Number($("rentIncrease").value||0);
-    const targetRent = Number($("targetRent").value||0);
-    const postRent = rentMode === "target" ? targetRent : (currentRent + rentIncrease);
-
-    // NOI mode
-    const noiMode = $("noiMode").value;
-
-    // Debt
-    const ltv = Number($("ltvPct").value||0)/100;
-    const rate = Number($("ratePct").value||0)/100;
-    const amortYears = Math.max(1, Number($("amortYears").value||1));
-    const holdYears  = Math.max(1, Number($("holdYears").value||1));
-    const returnDebtMode = $("returnDebtMode").value;
-
-    // Exit
-    const exitCap = Number($("exitCapPct").value||0)/100;
-    const saleCostPct = Number($("saleCostPct").value||0)/100;
-
-    // Equity
-    const capex = Number($("capex").value||0);
-
-    // Derived
-    const pricePerUnit = purchase / units;
-    const loan = purchase * ltv;
-    const equity = purchase - loan;
-    const totalEquity = equity + capex;
-
-    // NOI
-    let noiIn = NaN;
-    let noiStab = NaN;
-    let vacancyUsed = 0, expenseUsed = 0;
-
-    if (noiMode === "quick"){
-      vacancyUsed = Number($("vacancyPct").value||0)/100;
-      expenseUsed = Number($("expensePct").value||0)/100;
-      noiIn   = calcNOI(units, currentRent, otherIncomeMonthly, vacancyUsed, expenseUsed).noi;
-      noiStab = calcNOI(units, postRent,    otherIncomeMonthly, vacancyUsed, expenseUsed).noi;
-    } else {
-      noiIn = Number($("inPlaceNOIAnnual").value||0);
-      vacancyUsed = Number($("vacancyPctT12").value||0)/100;
-      expenseUsed = Number($("expensePctT12").value||0)/100;
-      noiStab = calcNOI(units, postRent, otherIncomeMonthly, vacancyUsed, expenseUsed).noi;
+    // ----------------------------
+    // Tier logic (ARV ONLY determines tier)
+    // You can adjust brackets here without changing the rest of the app.
+    // ----------------------------
+    function getTierMultiplier(arv){
+      // Default tier brackets:
+      // <150k = 0.70
+      // 150k-299,999 = 0.72
+      // 300k-499,999 = 0.75
+      // 500k-749,999 = 0.78
+      // 750k+ = 0.80
+      if (arv < 150000) return 0.70;
+      if (arv < 300000) return 0.72;
+      if (arv < 500000) return 0.75;
+      if (arv < 750000) return 0.78;
+      return 0.80;
+    }
+    function getTierName(mult){
+      if (mult === 0.70) return "Tier 1";
+      if (mult === 0.72) return "Tier 2";
+      if (mult === 0.75) return "Tier 3";
+      if (mult === 0.78) return "Tier 4";
+      if (mult === 0.80) return "Tier 5";
+      return "Tier";
     }
 
-    const noiInc = noiStab - noiIn;
-    const noiGrowth = (noiIn !== 0) ? (noiInc / noiIn) : NaN;
+    // ----------------------------
+    // State
+    // ----------------------------
+    const STORAGE_KEY = "mbps_deal_analyzer_v3";
+    let compareMode = "renovated"; // "renovated" | "asis"
 
-    // Value
-    const projValue = exitCap > 0 ? (noiStab / exitCap) : NaN;
-    const valueInc  = exitCap > 0 ? (noiInc  / exitCap) : NaN;
-
-    // Debt service + DSCR
-    const annualPI = pmt(rate, amortYears, loan) * 12;
-    const annualIO = loan * rate;
-
-    const dscrPI = annualPI > 0 ? (noiIn / annualPI) : NaN;
-    const dscrIO = annualIO > 0 ? (noiIn / annualIO) : NaN;
-
-    // Exit proceeds
-    const saleCosts = projValue * saleCostPct;
-    const balAtSale = balanceAfterYears(rate, amortYears, loan, holdYears);
-    const netProceeds = projValue - saleCosts - balAtSale;
-
-    // Cash flow (assume stabilized NOI through hold period; simple underwriting)
-    const annualDebtForReturns = (returnDebtMode === "io") ? annualIO : annualPI;
-    const annualCashFlow = noiStab - annualDebtForReturns;
-    const cumulativeCashFlow = annualCashFlow * holdYears;
-
-    const totalReturn = netProceeds + cumulativeCashFlow;
-    const equityMultiple = totalEquity > 0 ? (totalReturn / totalEquity) : NaN;
-    const avgAnnual = (isFinite(equityMultiple) && equityMultiple > 0)
-      ? (Math.pow(equityMultiple, 1/holdYears) - 1)
-      : NaN;
-
-    // Rent lift (display)
-    const monthlyLift = (postRent - currentRent) * units;
-
-    // Core outputs
-    $("outPricePerUnit").textContent = fmtMoney0(pricePerUnit);
-    $("outLoan").textContent = fmtMoney0(loan);
-    $("outPostRent").textContent = fmtMoney2(postRent);
-    $("outMonthlyLift").textContent = fmtMoney0(monthlyLift) + " / mo";
-
-    $("outNOIInPlace").textContent = fmtMoney0(noiIn);
-    $("outNOIStabilized").textContent = fmtMoney0(noiStab);
-    $("outNOIInc").textContent = fmtMoney0(noiInc);
-    $("outNOIGrowth").textContent = isFinite(noiGrowth) ? fmtPct2(noiGrowth) : "—";
-
-    $("outProjValue").textContent = fmtMoney0(projValue);
-    $("outValueInc").textContent  = fmtMoney0(valueInc);
-
-    $("outNetProceeds").textContent = fmtMoney0(netProceeds);
-    $("outCashFlow").textContent = fmtMoney0(annualCashFlow);
-
-    $("outEquityMultiple").textContent = isFinite(equityMultiple) ? (fmtNum2(equityMultiple) + "×") : "—";
-    $("outAvgAnnual").textContent = isFinite(avgAnnual) ? fmtPct2(avgAnnual) : "—";
-
-    // Right panel badges
-    badge($("outDSCR_PI"), isFinite(dscrPI) ? fmtNum2(dscrPI) : "—",
-      (dscrPI>=1.25) ? "good" : (dscrPI>=1.10 ? "warn" : (isFinite(dscrPI) ? "bad" : "")));
-    badge($("outDSCR_IO"), isFinite(dscrIO) ? fmtNum2(dscrIO) : "—",
-      (dscrIO>=1.25) ? "good" : (dscrIO>=1.10 ? "warn" : (isFinite(dscrIO) ? "bad" : "")));
-
-    badge($("outDebtPI"), fmtMoney0(annualPI) + " / yr");
-    badge($("outDebtIO"), fmtMoney0(annualIO) + " / yr");
-    badge($("outLTV"), (ltv*100).toFixed(0) + "%");
-    badge($("outRate"), (rate*100).toFixed(2) + "%");
-
-    badge($("outNOITakeover"), fmtMoney0(noiIn));
-    badge($("outNOIMarket"), fmtMoney0(noiStab));
-    badge($("outNOIGrowthBadge"), isFinite(noiGrowth) ? fmtPct2(noiGrowth) : "—",
-      (noiGrowth>=0.25) ? "good" : (noiGrowth>=0.10 ? "warn" : (isFinite(noiGrowth) ? "bad" : "")));
-
-    badge($("outProjValueBadge"), fmtMoney0(projValue));
-    badge($("outSaleCosts"), fmtMoney0(saleCosts));
-    badge($("outBalAtSale"), fmtMoney0(balAtSale));
-    badge($("outNetProceedsBadge"), fmtMoney0(netProceeds));
-
-    badge($("outTotalEquity"), fmtMoney0(totalEquity));
-    badge($("outEquityMultipleBadge"), isFinite(equityMultiple) ? (fmtNum2(equityMultiple)+"×") : "—",
-      (equityMultiple>=2.0) ? "good" : (equityMultiple>=1.5 ? "warn" : (isFinite(equityMultiple) ? "bad" : "")));
-    badge($("outAvgAnnualBadge"), isFinite(avgAnnual) ? fmtPct2(avgAnnual) : "—",
-      (avgAnnual>=0.18) ? "good" : (avgAnnual>=0.12 ? "warn" : (isFinite(avgAnnual) ? "bad" : "")));
-
-    // Verdict
-    let verdict = [];
-    if (!isFinite(projValue)) verdict.push("Enter an Exit Cap to compute projected value.");
-    if (!isFinite(noiIn) || !isFinite(noiStab)) verdict.push("Check NOI inputs.");
-    if (isFinite(noiInc)){
-      if (noiInc > 0) verdict.push(`Value-add indicated: NOI +${fmtMoney0(noiInc)} / yr ⇒ ~${fmtMoney0(valueInc)} value lift at ${(exitCap*100).toFixed(2)}% cap.`);
-      else verdict.push("No value-add: Stabilized NOI does not exceed in-place NOI.");
+    function setCompareMode(mode){
+      compareMode = mode === "asis" ? "asis" : "renovated";
+      $("btnCompareRenovated").classList.toggle("active", compareMode === "renovated");
+      $("btnCompareAsIs").classList.toggle("active", compareMode === "asis");
+      $("asIsValue").disabled = (compareMode !== "asis");
+      recalc();
+      persist();
     }
-    if (isFinite(dscrPI)) verdict.push(`DSCR (P&I) is ${fmtNum2(dscrPI)} (target ≥ 1.25).`);
-    if (isFinite(equityMultiple) && isFinite(avgAnnual)) verdict.push(`Projected returns: ${fmtNum2(equityMultiple)}× equity multiple, ${fmtPct2(avgAnnual)} avg annual return over ${holdYears} yrs.`);
-    $("outVerdict").textContent = verdict.join(" ");
-  }
 
-  document.querySelectorAll("input,select").forEach(el =>
-    el.addEventListener("input", () => { syncUI(); recalc(); })
-  );
+    // ----------------------------
+    // Calculation core
+    // ----------------------------
+    function recalc(){
+      const address = ($("address").value || "").trim();
+      const arv = clamp0(num($("arv").value));
+      const rent = clamp0(num($("rent").value));
 
-  syncUI();
-  recalc();
-</script>
+      const seller = clamp0(num($("sellerPrice").value));
+      const fee = clamp0(num($("wholesaleFee").value));
+      const rehab = clamp0(num($("rehab").value));
+      const closing = clamp0(num($("closing").value));
+
+      const asIsValue = clamp0(num($("asIsValue").value));
+
+      const minSpreadPct = clamp0(num($("minSpreadPct").value || 0)) / 100;
+      const minSpreadDollars = clamp0(num($("minSpreadDollars").value || 0));
+
+      // ✅ Buyer All-In is used for 1% rule
+      const buyerAllIn = seller + fee + rehab + closing;
+
+      // Tier multiplier: ARV only determines tier (unless override chosen)
+      const override = $("customTier").value ? Number($("customTier").value) : null;
+      const mult = override && isFinite(override) ? override : getTierMultiplier(arv);
+      const tierName = getTierName(mult) + (override ? " (Override)" : "");
+
+      // Tier max all-in allowed and max seller price suggestion
+      // MaxAllInAllowed = ARV * mult
+      // MaxSeller = (ARV*mult) - fee - rehab - closing
+      const maxAllInAllowed = arv * mult;
+      const maxSeller = maxAllInAllowed - fee - rehab - closing;
+
+      // Market spread validation
+      // Compare to Renovated (ARV) or As-Is value depending on toggle.
+      const marketValue = (compareMode === "asis") ? asIsValue : arv;
+      const spreadDollars = marketValue - buyerAllIn;
+      const spreadPct = marketValue > 0 ? (spreadDollars / marketValue) : NaN;
+
+      // 1% rule check
+      const onePctRatio = buyerAllIn > 0 ? (rent / buyerAllIn) : NaN;
+      const passesOnePct = isFinite(onePctRatio) && onePctRatio >= 0.01;
+
+      // ----------------------------
+      // Output
+      // ----------------------------
+      $("outAddress").textContent = address || "—";
+      $("outARV").textContent = fmtMoney(arv);
+      $("outRent").textContent = fmtMoney(rent);
+
+      $("outSeller").textContent = fmtMoney(seller);
+      $("outFee").textContent = fmtMoney(fee);
+      $("outRehab").textContent = fmtMoney(rehab);
+      $("outClosing").textContent = fmtMoney(closing);
+
+      $("outAllIn").textContent = fmtMoney(buyerAllIn);
+
+      $("tagAllInBreak").textContent = "All-In = Seller + Fee + Rehab + Closing";
+      $("tagOnePct").textContent = "1% Rule: " + (isFinite(onePctRatio) ? fmtPct(onePctRatio) : "—");
+      $("tagOnePct").className = "tag " + (passesOnePct ? "good" : (buyerAllIn > 0 ? "warn" : ""));
+
+      $("tagTier").textContent = "Tier: " + tierName;
+      $("tagMult").textContent = "Multiplier: " + (isFinite(mult) ? mult.toFixed(2) : "—");
+      $("outMaxAllInAllowed").textContent = fmtMoney(maxAllInAllowed);
+
+      const formula = isFinite(arv) && arv > 0
+        ? `Max Seller = (ARV × ${mult.toFixed(2)}) − Fee − Rehab − Closing`
+        : "Enter ARV to compute tier formula";
+      $("outTierFormula").textContent = formula;
+      $("outMaxSeller").textContent = fmtMoney(maxSeller);
+
+      // Spread outputs
+      $("outMarketValue").textContent = fmtMoney(marketValue);
+      $("outSpread").textContent = isFinite(spreadDollars) ? fmtMoney(spreadDollars) : "—";
+      $("tagSpreadPct").textContent = "Spread %: " + (isFinite(spreadPct) ? fmtPct(spreadPct) : "—");
+      $("outMinSpreadPct").textContent = (minSpreadPct ? (minSpreadPct*100).toFixed(0) + "%" : "0%");
+      $("outMinSpreadDollars").textContent = fmtMoney(minSpreadDollars);
+
+      $("tagCompareMode").textContent = "Compare: " + (compareMode === "asis" ? "As-Is Value" : "Renovated (ARV)");
+      $("tagCompareMode").className = "tag";
+
+      // Validation logic (intact, with Renovated vs As-Is toggle)
+      // PASS requires:
+      // - marketValue present (>0)
+      // - spread dollars >= minSpreadDollars
+      // - spread pct >= minSpreadPct
+      // - AND buyerAllIn should not exceed tier max all-in allowed (optional guard)
+      const hasMarket = marketValue > 0;
+      const passSpreadDollars = hasMarket && spreadDollars >= minSpreadDollars;
+      const passSpreadPct = hasMarket && isFinite(spreadPct) && spreadPct >= minSpreadPct;
+      const passTierAllIn = isFinite(maxAllInAllowed) ? (buyerAllIn <= maxAllInAllowed) : true;
+
+      // Box messaging
+      const box = $("validationBox");
+
+      if (!hasMarket){
+        box.className = "warnbox";
+        box.textContent = (compareMode === "asis")
+          ? "Enter an As-Is value to validate market spread."
+          : "Enter ARV to validate market spread.";
+      } else if (buyerAllIn <= 0){
+        box.className = "warnbox";
+        box.textContent = "Enter pricing inputs to validate spread (Seller, Fee, Rehab, Closing).";
+      } else {
+        const issues = [];
+        if (!passSpreadDollars) issues.push(`Spread $ below minimum (${fmtMoney(spreadDollars)} < ${fmtMoney(minSpreadDollars)})`);
+        if (!passSpreadPct) issues.push(`Spread % below minimum (${isFinite(spreadPct)?fmtPct(spreadPct):"—"} < ${(minSpreadPct*100).toFixed(0)}%)`);
+        if (!passTierAllIn) issues.push(`Buyer All-In exceeds tier max (${fmtMoney(buyerAllIn)} > ${fmtMoney(maxAllInAllowed)})`);
+
+        if (issues.length === 0){
+          box.className = "goodbox";
+          box.textContent = "PASS: Spread + tier check look acceptable based on your thresholds.";
+        } else if (issues.length === 1){
+          box.className = "warnbox";
+          box.textContent = "CHECK: " + issues[0];
+        } else {
+          box.className = "badbox";
+          box.textContent = "FAIL:\n- " + issues.join("\n- ");
+        }
+      }
+
+      // Header pills
+      $("pillTierMult").textContent = isFinite(mult) ? mult.toFixed(2) : "—";
+      $("pillTier").textContent = tierName;
+      $("pillAllIn").textContent = fmtMoney(buyerAllIn);
+      $("pillOnePct").textContent = (isFinite(onePctRatio) ? fmtPct(onePctRatio) : "—");
+
+      // Disable As-Is input if not used
+      $("asIsValue").disabled = (compareMode !== "asis");
+    }
+
+    // ----------------------------
+    // Persistence (LocalStorage intact)
+    // ----------------------------
+    function persist(){
+      const payload = {
+        compareMode,
+        address: $("address").value,
+        arv: $("arv").value,
+        rent: $("rent").value,
+        sellerPrice: $("sellerPrice").value,
+        wholesaleFee: $("wholesaleFee").value,
+        rehab: $("rehab").value,
+        closing: $("closing").value,
+        asIsValue: $("asIsValue").value,
+        customTier: $("customTier").value,
+        minSpreadPct: $("minSpreadPct").value,
+        minSpreadDollars: $("minSpreadDollars").value
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    function restore(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const p = JSON.parse(raw);
+
+        $("address").value = p.address ?? "";
+        $("arv").value = p.arv ?? "";
+        $("rent").value = p.rent ?? "";
+        $("sellerPrice").value = p.sellerPrice ?? "";
+        $("wholesaleFee").value = p.wholesaleFee ?? "";
+        $("rehab").value = p.rehab ?? "";
+        $("closing").value = p.closing ?? "";
+        $("asIsValue").value = p.asIsValue ?? "";
+        $("customTier").value = p.customTier ?? "";
+        $("minSpreadPct").value = (p.minSpreadPct ?? "15");
+        $("minSpreadDollars").value = (p.minSpreadDollars ?? "15000");
+
+        setCompareMode(p.compareMode || "renovated");
+      } catch(e){
+        // If corrupted, ignore safely
+      }
+    }
+
+    function resetAll(){
+      localStorage.removeItem(STORAGE_KEY);
+      $("address").value = "";
+      $("arv").value = "";
+      $("rent").value = "";
+      $("sellerPrice").value = "";
+      $("wholesaleFee").value = "";
+      $("rehab").value = "";
+      $("closing").value = "";
+      $("asIsValue").value = "";
+      $("customTier").value = "";
+      $("minSpreadPct").value = "15";
+      $("minSpreadDollars").value = "15000";
+      setCompareMode("renovated");
+      recalc();
+    }
+
+    // ----------------------------
+    // Events
+    // ----------------------------
+    const inputs = [
+      "address","arv","rent","sellerPrice","wholesaleFee","rehab","closing",
+      "asIsValue","customTier","minSpreadPct","minSpreadDollars"
+    ];
+    inputs.forEach(id=>{
+      $(id).addEventListener("input", ()=>{ recalc(); persist(); });
+      $(id).addEventListener("change", ()=>{ recalc(); persist(); });
+    });
+
+    $("btnCompareRenovated").addEventListener("click", ()=>setCompareMode("renovated"));
+    $("btnCompareAsIs").addEventListener("click", ()=>setCompareMode("asis"));
+
+    $("btnPrint").addEventListener("click", ()=>{
+      recalc(); // ensure latest
+      window.print();
+    });
+
+    $("btnReset").addEventListener("click", resetAll);
+
+    // ----------------------------
+    // Init
+    // ----------------------------
+    // Defaults that work even on first load
+    if (!$("minSpreadPct").value) $("minSpreadPct").value = "15";
+    if (!$("minSpreadDollars").value) $("minSpreadDollars").value = "15000";
+
+    restore();
+    recalc();
+
+    // Optional: register service worker if you have one
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+    }
+  </script>
 </body>
 </html>
