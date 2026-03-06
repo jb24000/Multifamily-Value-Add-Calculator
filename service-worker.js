@@ -1,4 +1,3 @@
-// Simple offline-first SW with cache versioning.
 const CACHE_NAME = "mf-value-add-v1.0.0";
 const ASSETS = [
   "./",
@@ -22,22 +21,24 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)));
+      await Promise.all(
+        keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null))
+      );
       await self.clients.claim();
     })()
   );
 });
 
-// Network-first for HTML (so updates roll out), cache-first for others.
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Only handle same-origin
   if (url.origin !== self.location.origin) return;
 
-  // HTML: network-first
-  if (req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html")) {
+  if (
+    req.mode === "navigate" ||
+    (req.headers.get("accept") || "").includes("text/html")
+  ) {
     event.respondWith(
       (async () => {
         try {
@@ -54,7 +55,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Assets: cache-first
   event.respondWith(
     caches.match(req).then((cached) => cached || fetch(req))
   );
