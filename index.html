@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Multifamily Deal Checklist + Value-Add Calculator</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#0b0f14">
   <style>
     :root{
       --bg:#0b0f14; --card:#121826; --muted:#93a4b8; --text:#e7eef8; --line:#223044;
@@ -31,6 +33,18 @@
     @media (max-width: 980px){ .grid{grid-template-columns:1fr} .right .card{position:static} }
   </style>
 </head>
+  <script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", async () => {
+      try {
+        await navigator.serviceWorker.register("./service-worker.js");
+        console.log("Service worker registered");
+      } catch (err) {
+        console.error("Service worker registration failed:", err);
+      }
+    });
+  }
+</script>
 <body>
   <h1>Multifamily Deal Checklist & Key Metrics (Value-Add + Debt + Returns)</h1>
 
